@@ -37,7 +37,8 @@ As regras `CAR-*` são **funções puras**: entram dados, saem dados. Sem `useSt
 sem navegação. Isso dá três coisas de graça:
 
 - **Testáveis com Jest sem montar tela** — que é exatamente o "ambiente de teste configurado" que o
-  CP5 cobra, e o tipo de teste que não quebra quando o layout muda.
+  CP5 cobra, e o tipo de teste que não quebra quando o layout muda. Já são **22 asserções verdes**
+  em [`src/domain/__tests__/regras.test.ts`](../src/domain/__tests__/regras.test.ts): rode `npm test`.
 - **Portáveis** — se um dia o app virar web ou watch, a lógica vem junto sem tocar em nada.
 - **Auditáveis** — dá para conferir a dupla progressão lendo 40 linhas. É o argumento contra usar um
   LLM para gerar treino: um gerador por tabela é auditável, um modelo não é.
@@ -84,4 +85,5 @@ que roda o teste. `62,5 kg`, não `62.5 kg`.
 | 1 | Supabase ou só local também no CP6? | antes de começar o CP6 |
 | 2 | Onboarding gera o plano ou o usuário monta do zero? | **CP5** — muda 4 telas |
 | 3 | `expo-linear-gradient` para o fundo de dois gradientes, ou imagem estática? | CP5, quando as telas entrarem |
-| 4 | Jest + React Native Testing Library, ou só Jest nas funções puras? | CP5 — o enunciado cobra ambiente de teste |
+| 4 | ~~Jest nas funções puras~~ — **resolvido**: `jest-expo` configurado, 22 testes verdes | ✅ |
+| 5 | React Native Testing Library para as telas, além dos testes de regra? | CP5 |

@@ -69,6 +69,12 @@ Depois de `npm start`, leia o QR Code com o Expo Go, ou pressione:
 | `i` | abre no simulador do iOS (só macOS) |
 | `w` | abre no navegador |
 
+Testes das regras do app:
+
+```bash
+npm test
+```
+
 ## Estrutura de pastas
 
 ```
@@ -77,9 +83,10 @@ serie/
 │   ├── app/            # rotas — Expo Router (file-based routing)
 │   ├── components/     # os 8 componentes do design system
 │   ├── domain/         # as regras CAR-* como funções puras. O "cérebro" do app
+│   │   └── __tests__/  # suíte Jest das regras — 22 testes
 │   ├── data/           # catálogo de exercícios e persistência local
 │   ├── theme/          # tokens (cor, tipografia, espaço, raio) — espelha serie-tokens.css
-│   └── hooks/          # hooks compartilhados
+│   └── lib/            # utilitários (formatação em pt-BR)
 ├── docs/
 │   ├── escopo.md            # problema, público-alvo, proposta de valor
 │   ├── pitch.md             # modelo de negócio e diferencial competitivo
@@ -91,7 +98,8 @@ serie/
 
 **Por que `domain/` é uma pasta separada:** as regras do app (dupla progressão, 1RM estimado, volume
 semanal) são funções puras, sem React e sem tela. Isso as torna testáveis com Jest no CP5 sem
-precisar montar componente nenhum. Detalhes em [`docs/decisoes-tecnicas.md`](docs/decisoes-tecnicas.md).
+precisar montar componente nenhum — são as 22 asserções de `npm test`. Detalhes em
+[`docs/decisoes-tecnicas.md`](docs/decisoes-tecnicas.md).
 
 ## Stack
 
@@ -100,6 +108,7 @@ precisar montar componente nenhum. Detalhes em [`docs/decisoes-tecnicas.md`](doc
 | App | **React Native + Expo (SDK 57)** | exigência do enunciado; roda no celular de todo o grupo e gera APK via EAS Build |
 | Navegação | **Expo Router** | rotas por arquivo, e o *deep link* sai de graça |
 | Linguagem | **TypeScript** | o modelo de domínio (Série, Sessão, Treino) é o coração do app; tipo errado aqui vira bug de carga |
+| Testes | **Jest** (preset `jest-expo`) | as regras são funções puras: dá para testá-las sem montar tela |
 | Dados (CP5) | **JSON local + AsyncStorage** | o enunciado do CP5 pede dados mockados, sem backend |
 | Dados (CP6) | **Supabase** *(a confirmar)* | só para backup e login. O app é **offline-first**: academia é subsolo |
 
@@ -108,7 +117,7 @@ precisar montar componente nenhum. Detalhes em [`docs/decisoes-tecnicas.md`](doc
 | | Foco | Status |
 |---|---|---|
 | **CP4** — Idealização | conceito, marca, documentação inicial | 🟡 em andamento |
-| **CP5** — Protótipo | protótipo funcional com dados mockados | ⬜ não iniciado |
+| **CP5** — Protótipo | protótipo funcional com dados mockados | ⬜ não iniciado — o ambiente de teste já está de pé |
 | **CP6** — Entrega final | app final e APK instalável | ⬜ não iniciado |
 
 ## Licença
