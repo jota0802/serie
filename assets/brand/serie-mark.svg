@@ -1,0 +1,8 @@
+<!-- Série. — marca. Geometria idêntica ao frame "mark" (78×51) do Figma.
+     Três barras crescentes = as séries do exercício.
+     A maior é ouro (#FFE657) porque ouro, no app inteiro, significa uma coisa só: recorde. -->
+<svg width="78" height="51" viewBox="0 0 78 51" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="0" y="0"  width="34" height="13" rx="4" fill="#F8F8F8"/>
+  <rect x="0" y="19" width="56" height="13" rx="4" fill="#F8F8F8"/>
+  <rect x="0" y="38" width="78" height="13" rx="4" fill="#FFE657"/>
+</svg>
