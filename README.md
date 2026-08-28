@@ -30,17 +30,13 @@ com um toque ou corrige o número. É a diferença entre *registrar* e *ser guia
 
 ## Integrantes e papéis
 
-> ⚠️ **PENDENTE — preencher antes de entregar o CP4.** O enunciado marca este item como
-> **OBRIGATÓRIO**: "deve estar presente na documentação o papel desempenhado por cada membro do
-> grupo". Grupo de 4 a 6 alunos, e o mesmo grupo nos três checkpoints.
-
 | Nome | RM | Papel | Responsável por |
 |---|---|---|---|
-| João Victor Franco | *a preencher* | Product Owner · Design System | regras `CAR-*`, tokens, arquivo do Figma, protótipo |
-| *a preencher* | | Dev Front | telas em React Native, navegação |
-| *a preencher* | | Dev Mock / Dados | camada de dados, persistência local, mocks do CP5 |
-| *a preencher* | | Design | identidade visual, ícone, splash, assets |
-| *a preencher* | | QA · Documentação | roteiro de testes, README, evidências de entrega |
+| João Victor Franco | 556790 | Product Owner · Design System | regras `CAR-*`, tokens, arquivo do Figma, protótipo |
+| Lucca Borges | 554608 | Dev Front | telas em React Native, navegação |
+| Ruan Melo | 557599 | Dev Mock / Dados | camada de dados, persistência local, mocks do CP5 |
+| Rodrigo Jimenez | 558148 | Design | identidade visual, ícone, splash, assets |
+| Bruno Leão | 555563 | QA · Documentação · Dev | roteiro de testes, README, evidências de entrega, apoio em desenvolvimento |
 
 ## Links do projeto
 
