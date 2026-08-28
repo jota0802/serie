@@ -51,12 +51,12 @@ export default function RecuperarSenha() {
             autoComplete="email"
             autoCorrect={false}
             returnKeyType="go"
-            onSubmitEditing={() => router.push('/link-enviado')}
+            onSubmitEditing={() => router.push({ pathname: '/link-enviado', params: { email } })}
           />
 
           <View style={estilos.espaco} />
 
-          <BotaoPrimario onPress={() => router.push('/link-enviado')}>Enviar link</BotaoPrimario>
+          <BotaoPrimario onPress={() => router.push({ pathname: '/link-enviado', params: { email } })}>Enviar link</BotaoPrimario>
 
           <View style={estilos.gap} />
         </View>
