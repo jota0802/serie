@@ -40,7 +40,7 @@ export default function Abertura() {
 
         <View style={estilos.acoes}>
           <BotaoPrimario onPress={() => router.push('/hoje')}>Montar meu treino</BotaoPrimario>
-          <BotaoPrimario variante="secundario" onPress={() => router.push('/hoje')}>
+          <BotaoPrimario variante="secundario" onPress={() => router.push('/entrar')}>
             Já tenho conta
           </BotaoPrimario>
         </View>
