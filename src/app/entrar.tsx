@@ -81,7 +81,7 @@ export default function Entrar() {
             style={estilos.rodape}
             hitSlop={space.s2}
           >
-            <Text style={estilos.linkFraco}>Não tem conta? </Text>
+            <Text style={estilos.linkFraco}>Não tem conta?</Text>
             <Text style={estilos.linkForte}>Criar conta</Text>
           </Pressable>
 
@@ -114,6 +114,7 @@ const estilos = StyleSheet.create({
     paddingVertical: 14,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: 6,
   },
   espaco: { flex: 1 },
   gap: { height: 16 },
