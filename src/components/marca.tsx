@@ -7,13 +7,18 @@ import { accent, neutral, radius } from '@/theme/tokens';
  * Três barras crescentes: as séries do exercício. A maior é ouro porque ouro, no
  * app inteiro, significa uma coisa só — recorde. Geometria idêntica ao frame
  * `mark` (78 × 51) do Figma; ver `docs/marca.md`.
+ *
+ * `pill` alterna o raio para 999 (barras em cápsula), que é a forma usada no
+ * frame `01 · Abertura` do Figma. Sem `pill`, cai no raio `4` das folhas de
+ * assets estáticos.
  */
-export function Marca({ largura = 78 }: { largura?: number }) {
+export function Marca({ largura = 78, pill = false }: { largura?: number; pill?: boolean }) {
   const k = largura / 78;
+  const altura = 13 * k;
   const barra = (w: number, cor: string) => ({
     width: w * k,
-    height: 13 * k,
-    borderRadius: radius.sm * 0.5 * k,
+    height: altura,
+    borderRadius: pill ? altura / 2 : radius.sm * 0.5 * k,
     backgroundColor: cor,
   });
 
