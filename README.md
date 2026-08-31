@@ -174,9 +174,14 @@ por causa de um treino incompleto, e o usuário chega na academia com um número
 serie/
 ├── src/
 │   ├── app/            # rotas — Expo Router (file-based routing)
-│   │   ├── index.tsx       # 10 · Hoje
+│   │   ├── index.tsx       # 01 · Abertura
+│   │   ├── entrar.tsx      # 02 · Entrar
+│   │   ├── criar-conta.tsx     # 03 · Criar conta
+│   │   ├── recuperar-senha.tsx # 04 · Recuperar senha
+│   │   ├── link-enviado.tsx    # 05 · Link enviado
+│   │   ├── hoje.tsx        # 10 · Hoje — a porta do caminho crítico
 │   │   └── treino/         # 11 ativo · 12 execução · 13 descanso · 14 resumo
-│   ├── components/     # os 8 componentes do design system
+│   ├── components/     # os componentes do design system
 │   ├── domain/         # as regras CAR-* como funções puras. O "cérebro" do app
 │   │   └── __tests__/  # suíte Jest das regras — 22 testes
 │   ├── data/           # catálogo de 45 exercícios, treinos A/B/C e histórico mockado
