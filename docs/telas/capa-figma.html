@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Série. — capa do arquivo do Figma</title>
+<!--
+  Fonte da capa da página `Cover` do arquivo do Figma (frame `Capa`, 1600 × 960, nó 27:2).
+
+  Existe para ser importada de volta pelo html.to.design: é assim que os INTEGRANTES entram no
+  arquivo sem ninguém desenhar caixa de texto à mão. Medidas, cores e tipos foram lidos do próprio
+  nó pelo MCP do Figma (`get_design_context`), então o resultado casa com o que já está lá.
+
+  O que mudou em relação à capa que está no arquivo hoje:
+    · 71 Variables  → 83 Variables   (a fundação cresceu e a capa ficou para trás)
+    · 12 quadros    → 21 quadros
+    · Entrada 01–03 / O treino 04–07 / Apoio 08–12 → 01–09 / 10–14 / 15–21
+    · bloco INTEGRANTES, novo — é item OBRIGATÓRIO da entrega
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  /* O canvas da Série: grafite frio à esquerda, brasa à direita, sobre o preto da base. */
+  .capa {
+    width: 1600px; height: 960px; padding: 0 110px;
+    display: flex; flex-direction: column; justify-content: center; gap: 48px;
+    background-color: #0E0E0E;
+    background-image:
+      radial-gradient(191.98% 76.8% at 14% -8%, rgba(27, 36, 40, 1) 0%, rgba(27, 36, 40, 0) 58%),
+      radial-gradient(147.19% 57.6% at 96% 2%, rgba(36, 29, 20, 1) 0%, rgba(36, 29, 20, 0) 52%);
+    font-family: 'Manrope', -apple-system, sans-serif;
+  }
+
+  .marca { display: flex; flex-direction: column; gap: 28px; align-items: flex-start; }
+  .mark  { display: flex; flex-direction: column; gap: 6px; align-items: flex-start; }
+  .barra { height: 13px; border-radius: 999px; background: #F8F8F8; }
+  .b1 { width: 34px; } .b2 { width: 56px; }
+  .b3 { width: 78px; background: #FFE657; }  /* ouro = recorde. A terceira série é a que conta. */
+
+  .nome {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 132px;
+    line-height: 1; letter-spacing: -6.6px; color: #F8F8F8;
+  }
+  .tese {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 30px;
+    letter-spacing: -0.45px; color: #909090;
+  }
+
+  .regua { height: 1px; background: rgba(255, 255, 255, 0.07); }
+
+  .colunas { display: flex; align-items: flex-start; }
+  .coluna  { flex: 1 0 0; min-width: 0; display: flex; flex-direction: column; gap: 14px; }
+  .titulo {
+    font-family: 'Space Grotesk', sans-serif; font-weight: 500; font-size: 12px;
+    letter-spacing: 1.44px; text-transform: uppercase; color: #6E6E6E;
+  }
+  .item { font-weight: 400; font-size: 17px; line-height: 1.5; color: #909090; }
+
+  /* Integrantes: o nome em tinta cheia, o papel em cinza. Quem fez o quê se lê de longe. */
+  .integrantes { display: flex; flex-direction: column; gap: 14px; }
+  .pessoa   { gap: 4px; }
+  .p-nome   { font-weight: 500; font-size: 17px; line-height: 1.5; color: #F8F8F8; }
+  .p-papel  { font-weight: 400; font-size: 15px; line-height: 1.5; color: #6E6E6E; }
+
+  .rodape { font-weight: 400; font-size: 15px; color: #6E6E6E; }
+</style>
+</head>
+<body>
+
+<div class="capa">
+
+  <div class="marca">
+    <div class="mark">
+      <div class="barra b1"></div>
+      <div class="barra b2"></div>
+      <div class="barra b3"></div>
+    </div>
+    <div class="nome">Série.</div>
+    <div class="tese">Ele não te dá treino. Ele te diz o que bater hoje.</div>
+  </div>
+
+  <div class="regua"></div>
+
+  <div class="colunas">
+    <div class="coluna">
+      <div class="titulo">Fundação</div>
+      <div class="item">83 Variables · 6 coleções</div>
+      <div class="item">3 estilos de efeito</div>
+      <div class="item">11 estilos de texto</div>
+      <div class="item">Página Foundations</div>
+    </div>
+    <div class="coluna">
+      <div class="titulo">Componentes</div>
+      <div class="item">Botão primário · 3 estados</div>
+      <div class="item">Linha de série · 3 estados</div>
+      <div class="item">Nav · 4 abas</div>
+      <div class="item">Card · 2 estilos</div>
+      <div class="item">Chip · 2 estados</div>
+    </div>
+    <div class="coluna">
+      <div class="titulo">Telas</div>
+      <div class="item">21 quadros · 390 × 844</div>
+      <div class="item">Entrada · 01–09</div>
+      <div class="item">O treino · 10–14</div>
+      <div class="item">Apoio · 15–21</div>
+    </div>
+    <div class="coluna">
+      <div class="titulo">As três leis</div>
+      <div class="item">Esqueuomorfismo no que se toca</div>
+      <div class="item">Vidro no que flutua</div>
+      <div class="item">Minimalismo no que se lê</div>
+      <div class="item">Um número dominante por tela</div>
+    </div>
+  </div>
+
+  <div class="regua"></div>
+
+  <div class="integrantes">
+    <div class="titulo">Integrantes</div>
+    <div class="colunas">
+      <div class="coluna pessoa">
+        <div class="p-nome">Lucca Borges</div>
+        <div class="p-papel">RM 554608 · Dev Front</div>
+      </div>
+      <div class="coluna pessoa">
+        <div class="p-nome">Ruan Melo</div>
+        <div class="p-papel">RM 557599 · Dev Mock / Dados</div>
+      </div>
+      <div class="coluna pessoa">
+        <div class="p-nome">Rodrigo Jimenez</div>
+        <div class="p-papel">RM 558148 · QA · Documentação</div>
+      </div>
+      <div class="coluna pessoa">
+        <div class="p-nome">João Victor Franco</div>
+        <div class="p-papel">RM 556790 · PO · Design System</div>
+      </div>
+      <div class="coluna pessoa">
+        <div class="p-nome">Bruno Leão</div>
+        <div class="p-papel">RM 555563 · Design</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="rodape">
+    FIAP · Engenharia de Software · 3º ano · Mobile Development &amp; IoT · Checkpoints 4, 5 e 6 ·
+    Prof. Hercules Ramos · tokens em serie-tokens.css
+  </div>
+
+</div>
+
+</body>
+</html>
