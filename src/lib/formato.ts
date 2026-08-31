@@ -26,3 +26,11 @@ export function formatarTempo(segundos: number): string {
   const min = Math.floor(total / 60);
   return `${min}:${String(total % 60).padStart(2, '0')}`;
 }
+
+const EXTENSO = ['zero', 'uma', 'duas', 'três', 'quatro', 'cinco',
+  'seis', 'sete', 'oito', 'nove', 'dez'];
+
+/** 4 → "quatro". Acima de dez volta o numeral — por extenso só atrapalharia. */
+export function porExtenso(n: number): string {
+  return EXTENSO[n] ?? String(n);
+}

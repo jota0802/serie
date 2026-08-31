@@ -26,6 +26,8 @@ export type GrupoMuscular =
 export interface Exercicio {
   id: string;
   nome: string;
+  /** Nome enxuto para linha apertada, onde o alvo divide a largura. Cai no `nome` se faltar. */
+  nomeCurto?: string;
   padrao: PadraoDeMovimento;
   grupo: GrupoMuscular;
   /** Quanto a carga sobe de uma vez. Academia tem anilha de 2,5 kg, não de 3,7%. */

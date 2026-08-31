@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { ProvedorDeSessao } from '@/estado/sessao';
 import { neutral } from '@/theme/tokens';
 
 SplashScreen.preventAutoHideAsync();
@@ -21,15 +22,17 @@ export default function RootLayout() {
   if (!pronto) return null;
 
   return (
-    <>
+    <ProvedorDeSessao>
       {/* Tema claro está fora do MVP: academia é ambiente escuro com o brilho no máximo. */}
       <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerShown: false,
           contentStyle: { backgroundColor: neutral.n1000 },
+          animation: 'fade',
+          animationDuration: 120,
         }}
       />
-    </>
+    </ProvedorDeSessao>
   );
 }

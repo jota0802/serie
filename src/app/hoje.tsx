@@ -1,120 +1,142 @@
+import { router } from 'expo-router';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BotaoPrimario } from '@/components/botao-primario';
-import { Marca } from '@/components/marca';
+import { Card } from '@/components/card';
+import { Fundo } from '@/components/fundo';
+import { Nav } from '@/components/nav';
 import { Texto } from '@/components/texto';
-import { EXERCICIOS_POR_ID } from '@/data/exercicios';
-import { proximoAlvo, type SerieRegistrada } from '@/domain';
-import { formatarKg } from '@/lib/formato';
-import { hit, neutral, radius, role, space, surface } from '@/theme/tokens';
+import { EXERCICIOS_POR_ID, nomeCurtoDe } from '@/data/exercicios';
+import { ULTIMA_SESSAO } from '@/data/historico';
+import { PLANO, TREINOS_POR_ID } from '@/data/treinos';
+import { proximoAlvo } from '@/domain';
+import { useSessao } from '@/estado/sessao';
+import { formatarKg, porExtenso } from '@/lib/formato';
+import { neutral, radius, space } from '@/theme/tokens';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 /**
- * Tela 10 · Hoje — a porta de entrada do caminho crítico (10 → 11 → 12 → 13 → 14).
+ * Tela 10 · Hoje — a porta de entrada do caminho crítico.
  *
  * Número dominante: A LETRA DO TREINO. A única decisão da tela é uma: começo ou não.
  *
- * Os alvos abaixo saem da `CAR-1` de verdade, rodando sobre um histórico de exemplo —
- * é a `CAR-2` (nunca campo vazio) visível: o app já chega com o número preenchido.
- * Os dados mockados entram no CP5; aqui eles servem de prova de que a regra roda.
+ * ⚠️ Nada aqui é número cravado. "Supino reto sobe para 42,5 kg" sai da `CAR-1`
+ * cruzando o plano (40 kg) com o histórico (12 reps nas quatro séries).
+ *
+ * Substitui a versão provisória desta tela, que trazia `TREINO_DE_HOJE` e `ULTIMA_SESSAO`
+ * cravados no próprio arquivo "como prova de que a regra roda" — os mocks agora moram em
+ * `src/data/`, e daqui sai o fluxo do treino (`/treino/ativo`).
  */
-
-const TREINO_DE_HOJE = {
-  letra: 'A',
-  nome: 'Peito e tríceps',
-  itens: [
-    { exercicioId: 'supino-reto-barra', series: 4, faixa: { min: 8, max: 12 }, cargaKg: 60 },
-    { exercicioId: 'supino-inclinado-halter', series: 3, faixa: { min: 8, max: 12 }, cargaKg: 22 },
-    { exercicioId: 'paralelas', series: 3, faixa: { min: 6, max: 10 }, cargaKg: 0 },
-    { exercicioId: 'triceps-corda', series: 3, faixa: { min: 10, max: 15 }, cargaKg: 25 },
-  ],
-};
-
-/** Histórico de exemplo: no supino ele FECHOU a faixa (12 em todas) — a carga sobe sozinha. */
-const ULTIMA_SESSAO: Record<string, SerieRegistrada[]> = {
-  'supino-reto-barra': [0, 1, 2, 3].map((i) => ({ exercicioId: 'supino-reto-barra', indice: i, reps: 12, cargaKg: 60, foiAlvo: true })),
-  'supino-inclinado-halter': [0, 1, 2].map((i) => ({ exercicioId: 'supino-inclinado-halter', indice: i, reps: 9, cargaKg: 22, foiAlvo: true })),
-};
+const DIAS = ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'];
+const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
+  'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
 export default function Hoje() {
+  const { comecar } = useSessao();
+  const treino = TREINOS_POR_ID.get(PLANO.treinoDeHoje)!;
+  const hoje = new Date();
+
+  // O alvo de cada exercício, pela regra. O primeiro que subiu vira o destaque da tela.
+  const linhas = treino.itens.map((item) => {
+    const exercicio = EXERCICIOS_POR_ID.get(item.exercicioId);
+    const alvo = proximoAlvo({
+      ultimaSessao: ULTIMA_SESSAO[item.exercicioId] ?? [],
+      faixa: item.faixa,
+      cargaAtualKg: item.cargaKg,
+      incrementoKg: exercicio?.incrementoKg ?? 2.5,
+      series: item.series,
+    })[0];
+    return { item, exercicio, alvo };
+  });
+
+  const subiu = linhas.find((l) => l.alvo.origem === 'progressao');
+  const anterior = subiu ? (ULTIMA_SESSAO[subiu.item.exercicioId] ?? []) : [];
+
+  const comecarTreino = () => {
+    comecar(treino.id);
+    router.push('/treino/ativo');
+  };
+
   return (
-    <SafeAreaView style={estilos.tela}>
-      <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
-        <Marca largura={44} />
-
-        <View style={estilos.cabecalho}>
-          <Texto papel="eyebrow">Hoje · treino do dia</Texto>
-          <View style={estilos.letra}>
-            <Texto papel="mega">{TREINO_DE_HOJE.letra}</Texto>
-            <Texto papel="h2" cor={neutral.n300}>{TREINO_DE_HOJE.nome}</Texto>
+    <View style={estilos.raiz}>
+      <Fundo />
+      <SafeAreaView style={estilos.seguro}>
+        <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
+          <View style={estilos.cabecalho}>
+            <Texto papel="eyebrow">
+              {DIAS[hoje.getDay()]}, {hoje.getDate()} de {MESES[hoje.getMonth()]}
+            </Texto>
+            <View style={estilos.contador}>
+              {Array.from({ length: PLANO.totalNaSemana }, (_, i) => (
+                <View key={i} style={[estilos.ponto, i < PLANO.sessaoDaSemana && estilos.pontoCheio]} />
+              ))}
+              <Texto papel="desc" cor={neutral.n400}>
+                {PLANO.sessaoDaSemana} de {PLANO.totalNaSemana}
+              </Texto>
+            </View>
           </View>
-        </View>
 
-        <View style={estilos.lista}>
-          {TREINO_DE_HOJE.itens.map((item) => {
-            const exercicio = EXERCICIOS_POR_ID.get(item.exercicioId);
-            const alvos = proximoAlvo({
-              ultimaSessao: ULTIMA_SESSAO[item.exercicioId] ?? [],
-              faixa: item.faixa,
-              cargaAtualKg: item.cargaKg,
-              incrementoKg: exercicio?.incrementoKg ?? 2.5,
-              series: item.series,
-            });
-            const alvo = alvos[0];
-            const subiu = alvo.origem === 'progressao';
+          <View style={estilos.titulo}>
+            <Texto papel="mega">{treino.id}</Texto>
+            <View style={estilos.tituloTexto}>
+              <Texto papel="h2">{treino.nome}</Texto>
+              <Texto papel="desc">
+                {treino.itens.length} exercícios · ~{Math.round(treino.itens.length * 11)} min
+              </Texto>
+            </View>
+          </View>
 
-            return (
+          {subiu && (
+            <Card>
+              <Texto papel="eyebrow">O que o app já sabe</Texto>
+              <Texto papel="h2">
+                {nomeCurtoDe(subiu.exercicio, subiu.item.exercicioId)} sobe para{' '}
+                {formatarKg(subiu.alvo.cargaKg)} kg
+              </Texto>
+              <Texto papel="desc">
+                Você fechou {anterior[0]?.reps} repetições nas {porExtenso(anterior.length)} séries da
+                última vez.
+              </Texto>
+            </Card>
+          )}
+
+          <View style={estilos.lista}>
+            <Texto papel="eyebrow">Hoje você faz</Texto>
+            {linhas.map(({ item, exercicio, alvo }) => (
               <View key={item.exercicioId} style={estilos.linha}>
-                <View style={estilos.linhaTexto}>
-                  <Texto papel="corpo" numberOfLines={1}>{exercicio?.nome ?? item.exercicioId}</Texto>
-                  <Texto papel="desc">
-                    {item.series} séries · {item.faixa.min}–{item.faixa.max} reps
-                  </Texto>
-                </View>
-                <View style={estilos.alvo}>
-                  <Texto papel="h2" cor={subiu ? role.record : role.target}>
-                    {exercicio?.unidade === 'corporal' ? '—' : `${formatarKg(alvo.cargaKg)} kg`}
-                  </Texto>
-                  <Texto papel="desc" cor={subiu ? role.record : neutral.n400}>
-                    {subiu ? 'subiu' : `alvo ${alvo.reps}`}
-                  </Texto>
-                </View>
+                <Texto papel="corpo" numberOfLines={1} style={estilos.linhaNome}>
+                  {nomeCurtoDe(exercicio, item.exercicioId)}
+                </Texto>
+                <Texto papel="desc" cor={neutral.n400}>
+                  {item.series} × {item.faixa.min}–{item.faixa.max}
+                  {exercicio?.unidade === 'corporal' ? '' : ` · ${formatarKg(alvo.cargaKg)} kg`}
+                </Texto>
               </View>
-            );
-          })}
-        </View>
+            ))}
+          </View>
 
-        <BotaoPrimario onPress={() => {}}>Começar treino</BotaoPrimario>
-        <Texto papel="desc" style={estilos.rodape}>
-          CP4 · idealização. As telas de execução chegam no CP5.
-        </Texto>
-      </ScrollView>
-    </SafeAreaView>
+        </ScrollView>
+        <View style={estilos.rodape}>
+          <BotaoPrimario onPress={comecarTreino}>Começar treino</BotaoPrimario>
+        </View>
+        <Nav ativa="hoje" />
+      </SafeAreaView>
+    </View>
   );
 }
 
 const estilos = StyleSheet.create({
-  // O fundo tem dois gradientes radiais no Figma (grafite frio + brasa quente).
-  // Em RN isso pede expo-linear-gradient; entra junto com as telas do CP5.
-  tela: { flex: 1, backgroundColor: surface.base },
-  conteudo: { padding: space.s5, gap: space.s6, paddingBottom: space.s7 },
-  cabecalho: { gap: space.s3 },
-  letra: { gap: space.s1 },
-  lista: { gap: space.s2 },
-  linha: {
-    minHeight: hit.row,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: space.s4,
-    paddingHorizontal: space.s4,
-    paddingVertical: space.s3,
-    backgroundColor: surface.raised,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: surface.line,
-  },
-  linhaTexto: { flex: 1, gap: 2 },
-  alvo: { alignItems: 'flex-end' },
-  rodape: { textAlign: 'center' },
+  raiz: { flex: 1 },
+  seguro: { flex: 1 },
+  conteudo: { paddingHorizontal: space.s5, paddingTop: space.s4, paddingBottom: space.s5, gap: space.s5 },
+  cabecalho: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  contador: { flexDirection: 'row', alignItems: 'center', gap: space.s2 },
+  ponto: { width: 7, height: 7, borderRadius: radius.full, backgroundColor: neutral.n700 },
+  pontoCheio: { backgroundColor: neutral.n100 },
+  titulo: { flexDirection: 'row', alignItems: 'center', gap: space.s4 },
+  tituloTexto: { flex: 1, gap: 2 },
+  lista: { gap: space.s3 },
+  linha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space.s4 },
+  linhaNome: { flex: 1 },
+  rodape: { paddingHorizontal: space.s5, paddingBottom: space.s4 },
 });
