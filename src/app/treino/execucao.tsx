@@ -4,7 +4,6 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { nomeCurtoDe } from '@/data/exercicios';
-import { ULTIMA_SESSAO } from '@/data/historico';
 import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
 import { useCronometro } from '@/hooks/use-cronometro';
 import { formatarKg } from '@/lib/formato';
@@ -37,7 +36,7 @@ export default function Execucao() {
   // ajuda — serve de referência de ritmo.
   const anterior =
     sessao.duracaoUltimaSerieS ??
-    (ULTIMA_SESSAO[item.exercicioId] ?? [])[0]?.duracaoSegundos;
+    treino.ultimaVez[0]?.duracaoSegundos;
 
   const encerrar = () => {
     encerrarSerie();

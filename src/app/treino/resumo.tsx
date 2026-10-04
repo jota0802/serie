@@ -6,8 +6,9 @@ import { Card } from '@/components/card';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { EXERCICIOS_POR_ID, nomeCurtoDe } from '@/data/exercicios';
-import { RECORDES } from '@/data/historico';
-import { PLANO } from '@/data/treinos';
+import { TREINOS } from '@/data/treinos';
+import { proximoTreino } from '@/domain/historico';
+import { useHistorico } from '@/estado/historico';
 import { melhor1RM, tonelagem } from '@/domain';
 import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
 import { formatarKg, formatarMilhar, formatarTempo } from '@/lib/formato';
@@ -21,6 +22,7 @@ import { accent, neutral, space, surface } from '@/theme/tokens';
 export default function Resumo() {
   const { sessao, abandonar } = useSessao();
   const treino = useTreinoEmAndamento();
+  const { sessoes } = useHistorico();
   if (!sessao || !treino) return null;
 
   const total = treino.tonelagem;
@@ -42,12 +44,14 @@ export default function Resumo() {
   const recordes = porExercicio
     .map(({ id, nome }) => {
       const novo = melhor1RM(sessao.registradas.filter((r) => r.exercicioId === id));
-      const antigo = RECORDES[id] ?? 0;
+      const antigo = treino.recordeAnterior(id);
       return { nome, novo, antigo, bateu: novo > antigo };
     })
     .filter((r) => r.bateu)
     .sort((a, b) => b.novo - a.novo);
   const recorde = recordes[0];
+
+  const proximo = proximoTreino(sessoes, TREINOS);
 
   const fechar = () => { abandonar(); router.replace('/hoje'); };
 
@@ -94,7 +98,7 @@ export default function Resumo() {
 
       <View style={estilos.rodape}>
         <Texto papel="desc" cor={neutral.n400} style={estilos.proximo}>
-          Próximo: Treino {PLANO.proximo.treino} · {PLANO.proximo.quando}
+          Próximo: Treino {proximo.id} · {proximo.nome}
         </Texto>
         <BotaoPrimario onPress={fechar}>Fechar</BotaoPrimario>
       </View>

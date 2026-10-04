@@ -7,9 +7,10 @@ import { Fundo } from '@/components/fundo';
 import { Nav } from '@/components/nav';
 import { Texto } from '@/components/texto';
 import { EXERCICIOS_POR_ID, nomeCurtoDe } from '@/data/exercicios';
-import { ULTIMA_SESSAO } from '@/data/historico';
-import { PLANO, TREINOS_POR_ID } from '@/data/treinos';
+import { PLANO, TREINOS } from '@/data/treinos';
 import { proximoAlvo } from '@/domain';
+import { proximoTreino, sessoesDaSemana, ultimasSeriesDe } from '@/domain/historico';
+import { useHistorico } from '@/estado/historico';
 import { useSessao } from '@/estado/sessao';
 import { formatarKg, porExtenso } from '@/lib/formato';
 import { neutral, radius, space } from '@/theme/tokens';
@@ -33,14 +34,17 @@ const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
 
 export default function Hoje() {
   const { comecar } = useSessao();
-  const treino = TREINOS_POR_ID.get(PLANO.treinoDeHoje)!;
+  const { sessoes } = useHistorico();
+  // A letra de hoje é a que vem depois da última sessão fechada — o app aprende.
+  const treino = proximoTreino(sessoes, TREINOS);
   const hoje = new Date();
+  const feitasNaSemana = sessoesDaSemana(sessoes, hoje.getTime()).length;
 
   // O alvo de cada exercício, pela regra. O primeiro que subiu vira o destaque da tela.
   const linhas = treino.itens.map((item) => {
     const exercicio = EXERCICIOS_POR_ID.get(item.exercicioId);
     const alvo = proximoAlvo({
-      ultimaSessao: ULTIMA_SESSAO[item.exercicioId] ?? [],
+      ultimaSessao: ultimasSeriesDe(sessoes, item.exercicioId),
       faixa: item.faixa,
       cargaAtualKg: item.cargaKg,
       incrementoKg: exercicio?.incrementoKg ?? 2.5,
@@ -50,7 +54,7 @@ export default function Hoje() {
   });
 
   const subiu = linhas.find((l) => l.alvo.origem === 'progressao');
-  const anterior = subiu ? (ULTIMA_SESSAO[subiu.item.exercicioId] ?? []) : [];
+  const anterior = subiu ? ultimasSeriesDe(sessoes, subiu.item.exercicioId) : [];
 
   const comecarTreino = () => {
     comecar(treino.id);
@@ -67,11 +71,11 @@ export default function Hoje() {
               {DIAS[hoje.getDay()]}, {hoje.getDate()} de {MESES[hoje.getMonth()]}
             </Texto>
             <View style={estilos.contador}>
-              {Array.from({ length: PLANO.totalNaSemana }, (_, i) => (
-                <View key={i} style={[estilos.ponto, i < PLANO.sessaoDaSemana && estilos.pontoCheio]} />
+              {Array.from({ length: PLANO.dias.length }, (_, i) => (
+                <View key={i} style={[estilos.ponto, i < feitasNaSemana && estilos.pontoCheio]} />
               ))}
               <Texto papel="desc" cor={neutral.n400}>
-                {PLANO.sessaoDaSemana} de {PLANO.totalNaSemana}
+                {Math.min(feitasNaSemana + 1, PLANO.dias.length)} de {PLANO.dias.length}
               </Texto>
             </View>
           </View>

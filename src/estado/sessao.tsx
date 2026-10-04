@@ -1,9 +1,10 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { EXERCICIOS_POR_ID } from '@/data/exercicios';
-import { RECORDES, TONELAGEM_ANTERIOR, ULTIMA_SESSAO } from '@/data/historico';
 import { TREINOS_POR_ID } from '@/data/treinos';
-import { melhor1RM, proximoAlvo, tonelagem, type Alvo, type SerieRegistrada } from '@/domain';
+import { melhor1RM, proximoAlvo, tonelagem, type Alvo, type ItemDeTreino, type SerieRegistrada, type Treino } from '@/domain';
+import { recordeDe, ultimasSeriesDe, ultimaTonelagem } from '@/domain/historico';
+import { useHistorico } from '@/estado/historico';
 
 /**
  * O estado da sessão em andamento.
@@ -11,8 +12,8 @@ import { melhor1RM, proximoAlvo, tonelagem, type Alvo, type SerieRegistrada } fr
  * Vive em memória e é a fonte de verdade do caminho crítico
  * (11 Treino ativo → 12 Execução → 13 Descanso → 14 Resumo).
  *
- * ⚠️ `CAR-8` diz que a sessão fica retomável por 6 h — isso exige persistir em disco,
- * e entra junto com o AsyncStorage. Por enquanto a sessão vive só enquanto o app vive.
+ * O passado (última vez, recorde, tonelagem anterior) vem do histórico persistido
+ * (`src/estado/historico.tsx`), e o treino terminado entra nele.
  */
 
 export interface Sessao {
@@ -28,6 +29,19 @@ export interface Sessao {
   duracaoUltimaSerieS: number | null;
   /** Quando a última série do último exercício entrou. Nulo enquanto o treino corre. */
   fimMs: number | null;
+  /**
+   * `CAR-9` — aparelho ocupado: índice do item no treino → o exercício que entrou no lugar.
+   * O plano não muda; só esta sessão.
+   */
+  trocas: Record<number, string>;
+}
+
+/** O item do treino como ele está NESTA sessão, já com a troca de exercício aplicada. */
+export function itemDaSessao(treino: Treino, sessao: Pick<Sessao, 'trocas'>, indice: number): ItemDeTreino | undefined {
+  const item = treino.itens[indice];
+  if (!item) return undefined;
+  const trocado = sessao.trocas[indice];
+  return trocado ? { ...item, exercicioId: trocado } : item;
 }
 
 interface Contexto {
@@ -37,6 +51,8 @@ interface Contexto {
   /** Encerra o cronômetro da série e devolve quantos segundos ela durou. */
   encerrarSerie: () => number;
   registrar: (reps: number, cargaKg: number) => void;
+  /** `CAR-9` — troca o exercício atual por outro (do mesmo padrão) só nesta sessão. */
+  trocarExercicio: (exercicioId: string) => void;
   abandonar: () => void;
 }
 
@@ -44,11 +60,24 @@ const SessaoContexto = createContext<Contexto | null>(null);
 
 export function ProvedorDeSessao({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
+  const { registrarSessao } = useHistorico();
+
+  // Treino terminado vira histórico — é isso que faz o próximo Hoje propor outra coisa.
+  useEffect(() => {
+    if (!sessao?.fimMs) return;
+    registrarSessao({
+      id: `sessao-${sessao.inicioMs}`,
+      treinoId: sessao.treinoId,
+      inicioMs: sessao.inicioMs,
+      fimMs: sessao.fimMs,
+      series: sessao.registradas,
+    });
+  }, [sessao?.fimMs, sessao?.inicioMs, sessao?.treinoId, sessao?.registradas, registrarSessao]);
 
   const comecar = useCallback((treinoId: string) => {
     setSessao({
       treinoId, inicioMs: Date.now(), indiceExercicio: 0, indiceSerie: 0,
-      registradas: [], inicioSerieMs: null, duracaoUltimaSerieS: null, fimMs: null,
+      registradas: [], inicioSerieMs: null, duracaoUltimaSerieS: null, fimMs: null, trocas: {},
     });
   }, []);
 
@@ -70,7 +99,7 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
     setSessao((s) => {
       if (!s) return s;
       const treino = TREINOS_POR_ID.get(s.treinoId);
-      const item = treino?.itens[s.indiceExercicio];
+      const item = treino && itemDaSessao(treino, s, s.indiceExercicio);
       if (!treino || !item) return s;
 
       const registrada: SerieRegistrada = {
@@ -99,11 +128,15 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  const trocarExercicio = useCallback((exercicioId: string) => {
+    setSessao((s) => (s ? { ...s, trocas: { ...s.trocas, [s.indiceExercicio]: exercicioId } } : s));
+  }, []);
+
   const abandonar = useCallback(() => setSessao(null), []);
 
   const valor = useMemo(
-    () => ({ sessao, comecar, iniciarSerie, encerrarSerie, registrar, abandonar }),
-    [sessao, comecar, iniciarSerie, encerrarSerie, registrar, abandonar],
+    () => ({ sessao, comecar, iniciarSerie, encerrarSerie, registrar, trocarExercicio, abandonar }),
+    [sessao, comecar, iniciarSerie, encerrarSerie, registrar, trocarExercicio, abandonar],
   );
   return <SessaoContexto.Provider value={valor}>{children}</SessaoContexto.Provider>;
 }
@@ -120,6 +153,7 @@ export function useSessao() {
  */
 export function useTreinoEmAndamento() {
   const { sessao } = useSessao();
+  const { sessoes } = useHistorico();
 
   return useMemo(() => {
     if (!sessao) return null;
@@ -127,13 +161,17 @@ export function useTreinoEmAndamento() {
     if (!treino) return null;
 
     const terminou = sessao.indiceExercicio >= treino.itens.length;
-    const item = terminou ? undefined : treino.itens[sessao.indiceExercicio];
+    const item = terminou ? undefined : itemDaSessao(treino, sessao, sessao.indiceExercicio);
+    // As sessões ANTES desta — a que acabou de fechar entra no histórico e não pode se comparar consigo.
+    const anteriores = sessoes.filter((s) => s.id !== `sessao-${sessao.inicioMs}`);
+    // A última vez deste exercício. É a entrada da `CAR-1`.
+    const ultimaVez = item ? ultimasSeriesDe(anteriores, item.exercicioId) : [];
     const exercicio = item ? EXERCICIOS_POR_ID.get(item.exercicioId) : undefined;
 
     let alvos: Alvo[] = [];
     if (item) {
       alvos = proximoAlvo({
-        ultimaSessao: ULTIMA_SESSAO[item.exercicioId] ?? [],
+        ultimaSessao: ultimaVez,
         faixa: item.faixa,
         cargaAtualKg: item.cargaKg,
         incrementoKg: exercicio?.incrementoKg ?? 2.5,
@@ -145,7 +183,7 @@ export function useTreinoEmAndamento() {
       ? sessao.registradas.filter((r) => r.exercicioId === item.exercicioId)
       : [];
 
-    const proximoItem = treino.itens[sessao.indiceExercicio + 1];
+    const proximoItem = itemDaSessao(treino, sessao, sessao.indiceExercicio + 1);
 
     return {
       treino,
@@ -154,6 +192,7 @@ export function useTreinoEmAndamento() {
       alvos,
       alvo: alvos[sessao.indiceSerie] ?? alvos[0],
       feitasDoExercicio,
+      ultimaVez,
       terminou,
       proximoExercicio: proximoItem ? EXERCICIOS_POR_ID.get(proximoItem.exercicioId) : undefined,
       /** Quanto do treino já foi, de 0 a 1 — alimenta a barra fina do topo. */
@@ -161,10 +200,12 @@ export function useTreinoEmAndamento() {
         sessao.registradas.length /
         Math.max(1, treino.itens.reduce((total, i) => total + i.series, 0)),
       tonelagem: tonelagem(sessao.registradas),
-      tonelagemAnterior: TONELAGEM_ANTERIOR[sessao.treinoId] ?? 0,
+      tonelagemAnterior: ultimaTonelagem(anteriores, sessao.treinoId),
       /** O recorde do exercício atual, para saber se a série que vem bate (`CAR-5`). */
-      recordeDoExercicio: item ? (RECORDES[item.exercicioId] ?? 0) : 0,
+      recordeDoExercicio: item ? recordeDe(anteriores, item.exercicioId) : 0,
+      /** Recorde de qualquer exercício ANTES desta sessão — o resumo compara com isto. */
+      recordeAnterior: (exercicioId: string) => recordeDe(anteriores, exercicioId),
       melhor1RMDaSessao: melhor1RM(sessao.registradas),
     };
-  }, [sessao]);
+  }, [sessao, sessoes]);
 }

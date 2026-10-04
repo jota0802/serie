@@ -8,7 +8,6 @@ import { LinhaDeSerie } from '@/components/linha-de-serie';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { nomeCurtoDe } from '@/data/exercicios';
-import { ULTIMA_SESSAO } from '@/data/historico';
 import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
 import { useCronometro } from '@/hooks/use-cronometro';
 import { formatarKg, formatarTempo } from '@/lib/formato';
@@ -34,12 +33,12 @@ export default function TreinoAtivo() {
 
   if (!sessao || !treino || terminou) return null;
 
-  const { item, exercicio, alvo, alvos, feitasDoExercicio, proximoExercicio } = treino;
+  const { item, exercicio, alvo, alvos, feitasDoExercicio, proximoExercicio, ultimaVez } = treino;
   if (!item || !alvo) return null;
 
-  const cargaAnterior = (ULTIMA_SESSAO[item.exercicioId] ?? [])[0]?.cargaKg;
+  const cargaAnterior = ultimaVez[0]?.cargaKg;
   const subiu = alvo.origem === 'progressao';
-  const indiceExercicio = treino.treino.itens.indexOf(item) + 1;
+  const indiceExercicio = sessao.indiceExercicio + 1;
 
   const comecarSerie = () => {
     iniciarSerie();

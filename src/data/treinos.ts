@@ -55,10 +55,6 @@ export const TREINOS_POR_ID: ReadonlyMap<string, Treino> = new Map(TREINOS.map((
 export const PLANO = {
   /** 0 = domingo. Segunda, terça, quinta e sexta. */
   dias: [1, 2, 4, 5],
-  /** Qual treino é o de hoje. Mockado enquanto o plano não é montado de verdade. */
-  treinoDeHoje: 'A',
-  /** Posição da sessão na semana — alimenta o "2 de 4" do cabeçalho. */
-  sessaoDaSemana: 2,
-  totalNaSemana: 4,
-  proximo: { treino: 'B', quando: 'quinta-feira' },
+  // A letra de hoje e o "2 de 4" do cabeçalho NÃO moram aqui: saem do histórico
+  // (`proximoTreino` e `sessoesDaSemana` em `src/domain/historico.ts`).
 } as const;

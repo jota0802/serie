@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
+import { ProvedorDeHistorico } from '@/estado/historico';
 import { ProvedorDeSessao } from '@/estado/sessao';
 import { neutral } from '@/theme/tokens';
 
@@ -22,6 +23,7 @@ export default function RootLayout() {
   if (!pronto) return null;
 
   return (
+    <ProvedorDeHistorico>
     <ProvedorDeSessao>
       {/* Tema claro está fora do MVP: academia é ambiente escuro com o brilho no máximo. */}
       <StatusBar style="light" />
@@ -34,5 +36,6 @@ export default function RootLayout() {
         }}
       />
     </ProvedorDeSessao>
+    </ProvedorDeHistorico>
   );
 }
