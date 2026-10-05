@@ -1,9 +1,14 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BotaoPrimario } from '@/components/botao-primario';
+import { useEspera } from '@/hooks/use-espera';
+import { formatarTempo } from '@/lib/formato';
 import { font, neutral, radius, space, surface } from '@/theme/tokens';
+
+const ESPERA_PARA_REENVIAR_S = 30;
 
 /**
  * Tela 05 · Link enviado — a confirmação da 04.
@@ -23,6 +28,18 @@ export default function LinkEnviado() {
   // cai num fallback genérico em vez de ostentar um placeholder falso.
   const { email } = useLocalSearchParams<{ email?: string }>();
   const destino = email?.trim() || 'seu e-mail';
+
+  // O envio de verdade é do CP6 (Supabase); a 04 também é simulada, então "reenviado" aqui
+  // é o mesmo contrato do protótipo. O que NÃO pode é o toque não dar resposta nenhuma — e
+  // o cooldown de 30 s impede martelar o botão (no CP6, cada toque seria um e-mail).
+  const [reenviou, setReenviou] = useState(false);
+  const { restante, armar } = useEspera();
+  const esperando = restante > 0;
+  const reenviar = () => {
+    if (esperando) return;
+    setReenviou(true);
+    armar(ESPERA_PARA_REENVIAR_S);
+  };
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top', 'bottom']}>
@@ -45,14 +62,20 @@ export default function LinkEnviado() {
         <BotaoPrimario onPress={() => router.replace('/entrar')}>Voltar para entrar</BotaoPrimario>
 
         <Pressable
-          onPress={() => {
-            /* CP6: reenviar link via Supabase */
-          }}
+          onPress={reenviar}
+          disabled={esperando}
           accessibilityRole="button"
+          accessibilityState={{ disabled: esperando }}
           style={estilos.reenviar}
           hitSlop={space.s2}
         >
-          <Text style={estilos.textoReenviar}>Não chegou? Reenviar</Text>
+          <Text style={[estilos.textoReenviar, esperando && estilos.textoEsperando]}>
+            {esperando
+              ? `Link reenviado · reenviar de novo em ${formatarTempo(restante)}`
+              : reenviou
+                ? 'Link reenviado. Não chegou? Reenviar'
+                : 'Não chegou? Reenviar'}
+          </Text>
         </Pressable>
 
         <View style={estilos.gap} />
@@ -130,5 +153,7 @@ const estilos = StyleSheet.create({
     fontWeight: '600',
     color: neutral.n300,
   },
+  // Em espera o link apaga — o mesmo n400 que o resto do app usa para desabilitado.
+  textoEsperando: { color: neutral.n400 },
   gap: { height: 16 },
 });

@@ -1,11 +1,15 @@
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
+import { Fundo } from '@/components/fundo';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { nomeCurtoDe } from '@/data/exercicios';
-import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
+import { duracaoDaSerieAnterior } from '@/domain/sessao';
 import { useCronometro } from '@/hooks/use-cronometro';
+import { useGuardaDaSessao } from '@/hooks/use-guarda-da-sessao';
+import { useSessao } from '@/estado/sessao';
+import { useTreinoComTroca } from '@/hooks/use-treino-com-troca';
 import { formatarKg } from '@/lib/formato';
 import { neutral, space } from '@/theme/tokens';
 
@@ -26,18 +30,21 @@ import { neutral, space } from '@/theme/tokens';
  */
 export default function Execucao() {
   const { sessao, encerrarSerie } = useSessao();
-  const treino = useTreinoEmAndamento();
+  // CAR-9.1: exercício trocado mostra o alvo da variação, não a carga do aparelho original.
+  const treino = useTreinoComTroca();
   const segundos = useCronometro(sessao?.inicioSerieMs ?? null);
+  const pode = useGuardaDaSessao();
 
-  if (!sessao || !treino?.item || !treino.alvo) return null;
+  if (!pode || !sessao || !treino?.item || !treino.alvo) return <Fundo aquecido />;
   const { item, exercicio, alvo } = treino;
 
   // CAR-11.2: a duração da série anterior é a única informação em tempo real que
-  // ajuda — serve de referência de ritmo.
-  const anterior =
-    sessao.duracaoUltimaSerieS ??
-    treino.ultimaVez[0]?.duracaoSegundos;
+  // ajuda — serve de referência de ritmo. É a anterior DESTA sessão; o histórico
+  // só entra na primeira série, quando ainda não há nenhuma.
+  const anterior = duracaoDaSerieAnterior(sessao.registradas, treino.ultimaVez);
 
+  // `replace`: a execução sai da pilha e o descanso fica no lugar dela, logo acima
+  // do Treino ativo. Pilha estável: Hoje → Ativo → (Execução | Descanso).
   const encerrar = () => {
     encerrarSerie();
     router.replace('/treino/descanso');

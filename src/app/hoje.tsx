@@ -33,8 +33,8 @@ const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
 export default function Hoje() {
-  const { comecar } = useSessao();
-  const { sessoes } = useHistorico();
+  const { sessao, carregada, comecar } = useSessao();
+  const { sessoes, carregado } = useHistorico();
   // A letra de hoje é a que vem depois da última sessão fechada — o app aprende.
   const treino = proximoTreino(sessoes, TREINOS);
   const hoje = new Date();
@@ -56,10 +56,25 @@ export default function Hoje() {
   const subiu = linhas.find((l) => l.alvo.origem === 'progressao');
   const anterior = subiu ? ultimasSeriesDe(sessoes, subiu.item.exercicioId) : [];
 
+  // CAR-8: um treino aberto (voltou pelo botão do Android, ou reabriu o app) é retomado,
+  // não recomeçado — "Começar" por cima jogaria fora as séries já feitas. Só por 6 h:
+  // depois o provedor descarta a sessão, mesmo com o app aberto, e o botão volta a "Começar".
+  const emAndamento = sessao && !sessao.fimMs ? sessao : null;
+
   const comecarTreino = () => {
-    comecar(treino.id);
+    if (!emAndamento) comecar(treino.id);
     router.push('/treino/ativo');
   };
+
+  // ⚠️ Antes do AsyncStorage responder, `sessoes` é [] e a letra seria sempre A: piscaria
+  // A e trocaria para B. Melhor o canvas vazio por um instante do que um número errado.
+  if (!carregado || !carregada) {
+    return (
+      <View style={estilos.raiz}>
+        <Fundo />
+      </View>
+    );
+  }
 
   return (
     <View style={estilos.raiz}>
@@ -121,7 +136,9 @@ export default function Hoje() {
 
         </ScrollView>
         <View style={estilos.rodape}>
-          <BotaoPrimario onPress={comecarTreino}>Começar treino</BotaoPrimario>
+          <BotaoPrimario onPress={comecarTreino}>
+            {emAndamento ? `Retomar treino ${emAndamento.treinoId}` : 'Começar treino'}
+          </BotaoPrimario>
         </View>
         <Nav ativa="hoje" />
       </SafeAreaView>

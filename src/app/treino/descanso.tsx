@@ -1,12 +1,15 @@
 import { router } from 'expo-router';
-import { useCallback, useRef, useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BackHandler, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Anel } from '@/components/anel';
+import { Fundo } from '@/components/fundo';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
-import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
+import { useSessao } from '@/estado/sessao';
 import { useContagemRegressiva } from '@/hooks/use-cronometro';
+import { useGuardaDaSessao } from '@/hooks/use-guarda-da-sessao';
+import { useTreinoComTroca } from '@/hooks/use-treino-com-troca';
 import { formatarKg, formatarTempo } from '@/lib/formato';
 import { hit, neutral, radius, role, space, surface } from '@/theme/tokens';
 
@@ -18,8 +21,18 @@ import { hit, neutral, radius, role, space, surface } from '@/theme/tokens';
  * Os campos já chegam preenchidos com o alvo (`CAR-2`) — você confirma ou corrige.
  */
 export default function Descanso() {
+  // ⚠️ A guarda fica FORA do conteúdo: os campos nascem do alvo (`useState` inicial) e a
+  // contagem começa na montagem. Montar antes de a sessão voltar do disco (`CAR-8`)
+  // criaria campos vazios e um cronômetro que zera sem ter o que registrar.
+  const pode = useGuardaDaSessao();
+  return pode ? <ConteudoDoDescanso /> : <Fundo />;
+}
+
+function ConteudoDoDescanso() {
   const { sessao, registrar } = useSessao();
-  const treino = useTreinoEmAndamento();
+  // ⚠️ CAR-9.1: o campo nasce do alvo, e confirmar grava. Com o hook comum, a variação
+  // trocada herdava a carga do aparelho original e o histórico dela nascia errado.
+  const treino = useTreinoComTroca();
 
   const item = treino?.item;
   const alvo = treino?.alvo;
@@ -28,8 +41,8 @@ export default function Descanso() {
   const [reps, setReps] = useState(() => String(alvo?.reps ?? ''));
   const [carga, setCarga] = useState(() => (alvo ? formatarKg(alvo.cargaKg) : ''));
 
-  // O registro pode chegar por dois caminhos (zerou o cronômetro, ou pulou).
-  // Sem esta trava, os dois disparam e a série entra duas vezes.
+  // O registro pode chegar por três caminhos (zerou o cronômetro, pulou, ou o voltar do
+  // Android). Sem esta trava, mais de um dispara e a série entra duas vezes.
   const jaRegistrou = useRef(false);
 
   const concluir = useCallback(() => {
@@ -40,14 +53,27 @@ export default function Descanso() {
     registrar(
       Number.isFinite(r) ? r : (alvo?.reps ?? 0),
       Number.isFinite(c) ? c : (alvo?.cargaKg ?? 0),
+      alvo,
     );
-    router.replace('/treino/ativo');
+    // Volta para o Treino ativo que JÁ está embaixo na pilha. O `replace` antigo empilhava
+    // um Ativo novo a cada série (16 montados na 15ª) e o voltar pedia N+1 toques.
+    router.dismissTo('/treino/ativo');
   }, [item, reps, carga, alvo, registrar]);
 
   const { restante, adicionar } = useContagemRegressiva(total, concluir);
 
+  // Voltar do Android no descanso = pular o descanso. A série JÁ foi feita (a execução
+  // encerrou); voltar sem registrar perderia uma série de verdade. No navegador não há
+  // botão físico: o voltar do histórico só retorna ao Ativo, sem registrar e sem quebrar nada.
+  useEffect(() => {
+    const assinatura = BackHandler.addEventListener('hardwareBackPress', () => {
+      concluir();
+      return true;
+    });
+    return () => assinatura.remove();
+  }, [concluir]);
 
-  if (!sessao || !treino || !item || !alvo) return null;
+  if (!sessao || !treino || !item || !alvo) return <Fundo />;
 
   const ultimaDoExercicio = sessao.indiceSerie + 1 >= item.series;
 

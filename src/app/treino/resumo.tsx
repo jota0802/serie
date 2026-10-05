@@ -3,14 +3,17 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 
 import { BotaoPrimario } from '@/components/botao-primario';
 import { Card } from '@/components/card';
+import { Fundo } from '@/components/fundo';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { EXERCICIOS_POR_ID, nomeCurtoDe } from '@/data/exercicios';
 import { TREINOS } from '@/data/treinos';
-import { proximoTreino } from '@/domain/historico';
-import { useHistorico } from '@/estado/historico';
 import { melhor1RM, tonelagem } from '@/domain';
+import { proximoTreino } from '@/domain/historico';
+import { comparacaoDoResumo, exerciciosComCargaMaior } from '@/domain/resumo';
+import { fecharSessao } from '@/domain/sessao';
 import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
+import { useGuardaDaSessao } from '@/hooks/use-guarda-da-sessao';
 import { formatarKg, formatarMilhar, formatarTempo } from '@/lib/formato';
 import { accent, neutral, space, surface } from '@/theme/tokens';
 
@@ -22,12 +25,19 @@ import { accent, neutral, space, surface } from '@/theme/tokens';
 export default function Resumo() {
   const { sessao, abandonar } = useSessao();
   const treino = useTreinoEmAndamento();
-  const { sessoes } = useHistorico();
-  if (!sessao || !treino) return null;
+  const pode = useGuardaDaSessao('resumo');
+  if (!pode || !sessao || !treino) return <Fundo />;
 
   const total = treino.tonelagem;
-  const delta = total - treino.tonelagemAnterior;
+  // CAR-7 sem punir a progressão: a decisão e a conta estão em `src/domain/resumo.ts`.
+  const comparacao = comparacaoDoResumo({
+    tonelagem: total,
+    tonelagemAnterior: treino.tonelagemAnterior,
+    cargasQueSubiram: exerciciosComCargaMaior(sessao.registradas, treino.anteriores),
+    letra: treino.treino.id,
+  });
   const minutos = Math.max(1, Math.round(((sessao.fimMs ?? sessao.inicioMs) - sessao.inicioMs) / 60000));
+  const series = sessao.registradas.length;
   const reps = sessao.registradas.reduce((s, r) => s + r.reps, 0);
   const tensao = sessao.registradas.reduce((s, r) => s + (r.duracaoSegundos ?? 0), 0);
 
@@ -45,15 +55,22 @@ export default function Resumo() {
     .map(({ id, nome }) => {
       const novo = melhor1RM(sessao.registradas.filter((r) => r.exercicioId === id));
       const antigo = treino.recordeAnterior(id);
-      return { nome, novo, antigo, bateu: novo > antigo };
+      // Primeira vez no exercício (ex.: a variação que entrou pela troca, CAR-9) não é recorde
+      // batido: não havia o que bater, e o ouro diria "antes 0 kg".
+      return { nome, novo, antigo, bateu: antigo > 0 && novo > antigo };
     })
     .filter((r) => r.bateu)
     .sort((a, b) => b.novo - a.novo);
   const recorde = recordes[0];
 
-  const proximo = proximoTreino(sessoes, TREINOS);
+  // A próxima letra conta ESTA sessão mesmo que o efeito que a grava no histórico ainda
+  // não tenha rodado — senão o rodapé diria "Próximo: A" logo depois de um A.
+  const fechada = fecharSessao(sessao);
+  const proximo = proximoTreino(fechada ? [...treino.anteriores, fechada] : treino.anteriores, TREINOS);
 
-  const fechar = () => { abandonar(); router.replace('/hoje'); };
+  // `dismissTo` volta ao Hoje que já está na base da pilha (o `replace` criava um segundo).
+  // Navega ANTES de zerar a sessão: a guarda desta tela não pode reagir ao `null`.
+  const fechar = () => { router.dismissTo('/hoje'); abandonar(); };
 
   return (
     <Tela>
@@ -64,15 +81,17 @@ export default function Resumo() {
             <Texto papel="mega">{formatarMilhar(total)}</Texto>
             <Texto papel="h2" cor={neutral.n200}> kg</Texto>
           </View>
-          <Texto papel="corpo" cor={neutral.n300}>
-            {delta >= 0 ? '+ ' : '− '}{formatarMilhar(Math.abs(delta))} kg em relação ao último {treino.treino.id}
-          </Texto>
+          <Texto papel="corpo" cor={neutral.n300}>{comparacao.destaque}</Texto>
+          {comparacao.detalhe && (
+            <Texto papel="desc" cor={neutral.n400}>{comparacao.detalhe}</Texto>
+          )}
         </View>
 
         <View style={estilos.estatisticas}>
-          <Estatistica valor={String(minutos)} rotulo="minutos" />
-          <Estatistica valor={String(sessao.registradas.length)} rotulo="séries" />
-          <Estatistica valor={String(reps)} rotulo="reps" />
+          {/* Singular no 1: o piso de `minutos` é 1, e "1 MINUTOS" saía em caixa alta. */}
+          <Estatistica valor={String(minutos)} rotulo={minutos === 1 ? 'minuto' : 'minutos'} />
+          <Estatistica valor={String(series)} rotulo={series === 1 ? 'série' : 'séries'} />
+          <Estatistica valor={String(reps)} rotulo={reps === 1 ? 'rep' : 'reps'} />
           <Estatistica valor={formatarTempo(tensao)} rotulo="tensão" />
         </View>
 
