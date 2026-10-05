@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, View } from 'react-native';
+import { Texto } from './texto';
 import { hit, neutral, space } from '@/theme/tokens';
 
 /**
@@ -6,17 +7,21 @@ import { hit, neutral, space } from '@/theme/tokens';
  * vertical 15, chevron 7 × 14 no canto esquerdo. O chevron sai de duas bordas
  * de um quadrado rotacionado — zero dep de ícone, e o alvo de toque respeita
  * o piso da `CAR-11.3` (44 pt).
+ *
+ * `rotulo` põe o texto DENTRO do mesmo botão (tela 15). Embrulhar o <Voltar> num
+ * Pressable para o texto ser tocável vira <button> dentro de <button> na web.
  */
-export function Voltar({ onPress }: { onPress: () => void }) {
+export function Voltar({ onPress, rotulo }: { onPress: () => void; rotulo?: string }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="Voltar"
       hitSlop={space.s3}
-      style={estilos.container}
+      style={[estilos.container, rotulo !== undefined && estilos.comRotulo]}
     >
       <View style={estilos.chevron} />
+      {rotulo !== undefined && <Texto papel="eyebrow">{rotulo}</Texto>}
     </Pressable>
   );
 }
@@ -28,6 +33,7 @@ const estilos = StyleSheet.create({
     paddingVertical: 15,
     justifyContent: 'center',
   },
+  comRotulo: { flexDirection: 'row', alignItems: 'center', gap: space.s3 },
   // Quadrado com border esquerda + inferior, girado 45º = chevron para a esquerda.
   chevron: {
     width: 10,
