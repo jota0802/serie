@@ -1,4 +1,5 @@
-import { StyleSheet, View } from 'react-native';
+import { router, type Href } from 'expo-router';
+import { Pressable, StyleSheet, View } from 'react-native';
 import { IconeHoje, IconePerfil, IconeProgresso, IconeTreinos } from './icones';
 import { Texto } from './texto';
 import { glass, hit, neutral, space, surface } from '@/theme/tokens';
@@ -7,33 +8,38 @@ import { glass, hit, neutral, space, surface } from '@/theme/tokens';
  * A barra de navegação. Um dos DOIS únicos lugares com vidro no app inteiro
  * (o outro é a folha modal) — e aqui o vidro é o FINO, porque ela só flutua.
  *
- * ⚠️ Hoje só a aba `Hoje` tem tela. As outras três aparecem apagadas e NÃO recebem
- * toque: afordância clicável que não leva a lugar nenhum é o mesmo defeito que campo
- * que ninguém preenche. Elas acendem quando as telas 17, 20 e 21 existirem.
+ * As quatro abas levam a tela de verdade (10 Hoje, 20 Progresso, 17 Treinos, 21 Perfil).
+ * ⚠️ Troca de aba é `router.replace`, não `push`: aba é lugar, não passo. Com `push`,
+ * passear pelas abas empilharia telas e o "voltar" do Android desfaria cada toque.
  */
 const ABAS = [
-  { chave: 'hoje', rotulo: 'Hoje', Icone: IconeHoje },
-  { chave: 'progresso', rotulo: 'Progresso', Icone: IconeProgresso },
-  { chave: 'treinos', rotulo: 'Treinos', Icone: IconeTreinos },
-  { chave: 'perfil', rotulo: 'Perfil', Icone: IconePerfil },
-] as const;
+  { chave: 'hoje', rotulo: 'Hoje', rota: '/hoje', Icone: IconeHoje },
+  { chave: 'progresso', rotulo: 'Progresso', rota: '/progresso', Icone: IconeProgresso },
+  { chave: 'treinos', rotulo: 'Treinos', rota: '/treinos', Icone: IconeTreinos },
+  { chave: 'perfil', rotulo: 'Perfil', rota: '/perfil', Icone: IconePerfil },
+] as const satisfies readonly { chave: string; rotulo: string; rota: Href; Icone: unknown }[];
 
-export function Nav({ ativa = 'hoje' }: { ativa?: (typeof ABAS)[number]['chave'] }) {
+export type AbaDaNav = (typeof ABAS)[number]['chave'];
+
+export function Nav({ ativa = 'hoje' }: { ativa?: AbaDaNav }) {
   return (
-    <View style={estilos.barra}>
-      {ABAS.map(({ chave, rotulo, Icone }) => {
+    <View style={estilos.barra} accessibilityRole="tablist">
+      {ABAS.map(({ chave, rotulo, rota, Icone }) => {
         const eAtiva = chave === ativa;
         const cor = eAtiva ? neutral.n100 : neutral.n400;
         return (
-          <View
+          <Pressable
             key={chave}
             accessibilityRole="tab"
-            accessibilityState={{ selected: eAtiva, disabled: !eAtiva }}
-            style={estilos.aba}
+            accessibilityLabel={rotulo}
+            accessibilityState={{ selected: eAtiva }}
+            // Tocar na aba em que já se está não recarrega a tela.
+            onPress={() => !eAtiva && router.replace(rota)}
+            style={({ pressed }) => [estilos.aba, pressed && !eAtiva && estilos.pressionada]}
           >
             <Icone cor={cor} />
             <Texto papel="nav" cor={cor}>{rotulo}</Texto>
-          </View>
+          </Pressable>
         );
       })}
     </View>
@@ -50,4 +56,5 @@ const estilos = StyleSheet.create({
     paddingBottom: space.s2,
   },
   aba: { flex: 1, minHeight: hit.min, alignItems: 'center', justifyContent: 'center', gap: 5 },
+  pressionada: { opacity: 0.7 },
 });
