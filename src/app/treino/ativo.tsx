@@ -1,15 +1,17 @@
 import { router } from 'expo-router';
-import { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BotaoPrimario } from '@/components/botao-primario';
+import { Fundo } from '@/components/fundo';
 import { Chevron, Fechar, SetaCima, Troca } from '@/components/icones';
 import { LinhaDeSerie } from '@/components/linha-de-serie';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { nomeCurtoDe } from '@/data/exercicios';
-import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
+import { useSessao } from '@/estado/sessao';
 import { useCronometro } from '@/hooks/use-cronometro';
+import { useGuardaDaSessao } from '@/hooks/use-guarda-da-sessao';
+import { useTreinoComTroca } from '@/hooks/use-treino-com-troca';
 import { formatarKg, formatarTempo } from '@/lib/formato';
 import { accent, hit, neutral, radius, space, surface } from '@/theme/tokens';
 
@@ -19,33 +21,39 @@ import { accent, hit, neutral, radius, space, surface } from '@/theme/tokens';
  */
 export default function TreinoAtivo() {
   const { sessao, iniciarSerie, abandonar } = useSessao();
-  const treino = useTreinoEmAndamento();
+  // Com a CAR-9.1: depois de trocar, o alvo é estimado, não herdado do outro aparelho.
+  const treino = useTreinoComTroca();
   const decorridos = useCronometro(sessao?.inicioMs ?? null);
 
-  // O treino acabou: quem manda na navegação é o estado, não o botão.
-  // ☠️ Isto TEM que ser efeito. Chamar `router.replace` durante o render dispara
-  // "Cannot update a component while rendering a different component" — o React
-  // proíbe efeito colateral em render, e o aviso aparece de verdade.
-  const terminou = treino?.terminou ?? false;
-  useEffect(() => {
-    if (terminou) router.replace('/treino/resumo');
-  }, [terminou]);
+  // O treino acabou: quem manda na navegação é o estado, não o botão. Sem sessão
+  // (recarregou a aba, CAR-8) volta para o Hoje. A guarda faz os dois num efeito —
+  // ☠️ `router.replace` durante o render dispara "Cannot update a component while rendering".
+  const pode = useGuardaDaSessao();
 
-  if (!sessao || !treino || terminou) return null;
+  if (!pode || !sessao || !treino?.item || !treino.alvo) return <Fundo />;
 
   const { item, exercicio, alvo, alvos, feitasDoExercicio, proximoExercicio, ultimaVez } = treino;
-  if (!item || !alvo) return null;
 
   const cargaAnterior = ultimaVez[0]?.cargaKg;
   const subiu = alvo.origem === 'progressao';
   const indiceExercicio = sessao.indiceExercicio + 1;
+  const corporal = exercicio?.unidade === 'corporal';
+  // CAR-9.1: a carga da variação nova é palpite, e o app diz de onde ele veio.
+  const notaDaEstimativa = treino.semReferencia
+    ? 'Primeira vez, sem base para estimar · escolha a carga e registre no descanso'
+    : feitasDoExercicio.length > 0
+      ? 'Primeira vez nesta variação · segue a carga da sua 1ª série'
+      : treino.baseDaEstimativa
+        ? `Estimado pela carga de ${nomeCurtoDe(treino.baseDaEstimativa).toLowerCase()} · ajuste se precisar`
+        : 'Estimado · primeira vez nesta variação, ajuste se precisar';
 
   const comecarSerie = () => {
     iniciarSerie();
     router.push('/treino/execucao');
   };
 
-  const sair = () => { abandonar(); router.replace('/hoje'); };
+  // `dismissTo` volta ao Hoje que já está embaixo na pilha; `replace` empilhava um segundo Hoje.
+  const sair = () => { router.dismissTo('/hoje'); abandonar(); };
 
   return (
     <Tela>
@@ -72,19 +80,31 @@ export default function TreinoAtivo() {
           <Texto papel="h1" numberOfLines={1} style={estilos.nomeTexto}>
             {nomeCurtoDe(exercicio, item.exercicioId)}
           </Texto>
-          <View style={estilos.historico}>
+          {/* Tela 15: histórico e prescrição do exercício que está na mão AGORA (já trocado). */}
+          <Pressable
+            onPress={() => router.push(`/exercicio/${item.exercicioId}`)}
+            accessibilityRole="button"
+            accessibilityLabel="Histórico do exercício"
+            style={estilos.historico}
+          >
             <Texto papel="desc" cor={neutral.n300}>Histórico</Texto>
             <Chevron tamanho={16} />
-          </View>
+          </Pressable>
         </View>
 
         <View style={estilos.carga}>
+          {/* Sem base para estimar, um traço: "0 kg" no número dominante pareceria sugestão. */}
           <Texto papel="hero">
-            {exercicio?.unidade === 'corporal' ? 'peso do corpo' : formatarKg(alvo.cargaKg)}
+            {corporal ? 'peso do corpo' : treino.semReferencia ? '—' : formatarKg(alvo.cargaKg)}
           </Texto>
-          {exercicio?.unidade !== 'corporal' && <Texto papel="h2" cor={neutral.n200}> kg</Texto>}
+          {!corporal && <Texto papel="h2" cor={neutral.n200}> kg</Texto>}
           <Texto papel="desc" cor={neutral.n150}>  {item.faixa.min}–{item.faixa.max} reps</Texto>
         </View>
+
+        {/* Peso do corpo não tem carga para estimar: a nota seria ruído. */}
+        {alvo.origem === 'estimado' && !corporal && (
+          <Texto papel="desc" cor={neutral.n300}>{notaDaEstimativa}</Texto>
+        )}
 
         {subiu && cargaAnterior != null && (
           <View style={estilos.subiu}>
@@ -115,10 +135,15 @@ export default function TreinoAtivo() {
       </ScrollView>
 
       <View style={estilos.rodape}>
-        <View style={estilos.trocar}>
+        {/* CAR-9 · tela 16: aparelho ocupado. */}
+        <Pressable
+          onPress={() => router.push('/treino/trocar')}
+          accessibilityRole="button"
+          style={estilos.trocar}
+        >
           <Troca tamanho={17} />
           <Texto papel="corpo" cor={neutral.n200}>Trocar exercício</Texto>
-        </View>
+        </Pressable>
         {proximoExercicio && (
           <Texto papel="desc" cor={neutral.n400} numberOfLines={1}>
             Depois: {nomeCurtoDe(proximoExercicio)}
