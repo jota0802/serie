@@ -67,14 +67,16 @@ Soma de séries por grupo muscular na semana corrente. Faixa de referência **10
 estados: abaixo · na faixa · acima. É a única métrica "de treinador" do app, e ela existe para
 responder uma pergunta só: *o que eu estou negligenciando?*
 
-📍 `volumeSemanal()` em [`src/domain/volume.ts`](../src/domain/volume.ts)
+📍 `volumeSemanal()` em [`src/domain/volume.ts`](../src/domain/volume.ts); na tela 20, a janela dos
+últimos 7 dias e o grupo mais negligenciado em [`src/domain/progresso.ts`](../src/domain/progresso.ts)
 
 ## `CAR-5` Recorde
 
 1RM estimado por **Epley**: `1RM = carga × (1 + reps / 30)`. Calculado por série; o recorde do
 exercício é o maior já visto. Bater um recorde é **o único momento do app que tem cor**.
 
-📍 `umRepMaximo()` em [`src/domain/forca.ts`](../src/domain/forca.ts)
+📍 `umRepMaximo()` em [`src/domain/forca.ts`](../src/domain/forca.ts); o recorde de cada exercício,
+derivado do histórico salvo, em `recordeDe()` de [`src/domain/historico.ts`](../src/domain/historico.ts)
 
 ## `CAR-6` Descanso automático
 
@@ -86,12 +88,23 @@ A tela do cronômetro é a única desenhada para ser lida a dois metros de dist�
 `Σ (carga × reps)` da sessão, comparada com a **mesma letra** na vez anterior. É o número dominante
 do resumo. Comparar A com B não significaria nada, então não se compara.
 
-📍 `tonelagem()` em [`src/domain/forca.ts`](../src/domain/forca.ts)
+No dia em que a carga sobe, as reps voltam ao piso da faixa e a tonelagem **cai** — é a progressão
+funcionando, não regressão. O resumo não esconde o número: destaca *"carga subiu em N exercícios"* e
+mostra o volume menor logo abaixo, com o porquê.
+
+📍 `tonelagem()` em [`src/domain/forca.ts`](../src/domain/forca.ts); a comparação com a mesma letra
+em `ultimaTonelagem()` ([`src/domain/historico.ts`](../src/domain/historico.ts)) e o texto do resumo
+em `comparacaoDoResumo()` ([`src/domain/resumo.ts`](../src/domain/resumo.ts))
 
 ## `CAR-8` Sessão aberta expira em 6 h
 
 Saiu do app no meio? A sessão fica aberta e retomável por 6 h. Depois disso fecha sozinha com o que
 foi registrado, e não vira sessão-fantasma no histórico.
+
+📍 `sessaoVencida()` e `sessaoParaRestaurar()` em [`src/domain/sessao.ts`](../src/domain/sessao.ts);
+a sessão em andamento é salva no AsyncStorage (`serie:sessao:v1`), então recarregar ou fechar o app
+no meio do treino volta para a mesma série. ⚠️ No protótipo do CP5 a sessão vencida é **descartada**:
+fechar sozinha com o que foi registrado fica para o CP6.
 
 ## `CAR-9` Troca por padrão de movimento
 
@@ -99,11 +112,20 @@ foi registrado, e não vira sessão-fantasma no histórico.
 Série, exercício pertence a um `padrao`; ao trocar, o app oferece as variações do mesmo padrão e **o
 histórico segue o padrão, não o aparelho**.
 
+A variação tem que ser do mesmo padrão **e do mesmo grupo muscular** (sem isso, trocar tríceps
+oferecia prancha), composto só troca por composto, e a troca nunca oferece um exercício que já está
+em outro item do treino do dia (ele nasceria com as séries do outro).
+
 **`CAR-9.1`** A carga sugerida na variação nova é uma **estimativa declarada como tal**
 ("sugestão"). A partir da segunda vez naquela variação, usa histórico real. Não inventamos precisão
-que não temos.
+que não temos. A base da estimativa é, nesta ordem: o alvo de hoje do exercício que saiu, a carga
+mais recente da mesma família (padrão, grupo, composto/isolado), a carga do plano — convertida
+pelo equipamento (halter é por mão) e arredondada para a anilha. Sem base nenhuma, o app pede a
+carga em vez de sugerir "0 kg". Depois da primeira série, as que faltam seguem a carga que você usou.
 
-📍 `alternativasDoMesmoPadrao()` em [`src/data/exercicios.ts`](../src/data/exercicios.ts)
+📍 `alternativas()`, `alternativasNaSessao()` e `alvosDaTroca()` em
+[`src/domain/troca.ts`](../src/domain/troca.ts); o catálogo aplica em `alternativasDoMesmoPadrao()`
+([`src/data/exercicios.ts`](../src/data/exercicios.ts))
 
 ## `CAR-10` Tudo é auto-declarado
 

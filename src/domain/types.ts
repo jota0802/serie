@@ -22,6 +22,9 @@ export type GrupoMuscular =
   | 'peito' | 'costas' | 'ombro' | 'biceps' | 'triceps'
   | 'quadriceps' | 'posterior' | 'gluteo' | 'panturrilha' | 'core';
 
+/** `halteres` = carga POR MÃO (ou do halter único, no francês). */
+export type Equipamento = 'barra' | 'halteres' | 'maquina' | 'polia' | 'corporal';
+
 /** O movimento. "Supino reto". */
 export interface Exercicio {
   id: string;
@@ -35,6 +38,16 @@ export interface Exercicio {
   composto: boolean;
   unilateral: boolean;
   unidade: 'kg' | 'corporal';
+  /**
+   * Com o que se levanta. Só a `CAR-9.1` usa: 40 kg na barra não são 40 kg na máquina
+   * nem 40 kg por mão no halter. Opcional para exercício fora do catálogo ("outro").
+   */
+  equipamento?: Equipamento;
+  /**
+   * `CAR-9.1` — para o aparelho que foge da regra do equipamento: o leg press carrega
+   * ~2,5× a barra, e "máquina = 1,1" sugeria 160 kg no Smith. Ausente = fator do equipamento.
+   */
+  fatorDeCarga?: number;
   /** Descanso padrão em segundos. 90 s composto · 60 s isolado (CAR-6). */
   descansoSegundos: number;
 }
