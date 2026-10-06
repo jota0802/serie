@@ -1,4 +1,4 @@
-import { router } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
@@ -8,7 +8,6 @@ import { LinhaDeAjuste } from '@/components/linha-de-ajuste';
 import { TelaDeAba } from '@/components/tela-de-aba';
 import { Texto } from '@/components/texto';
 import { EXERCICIOS_POR_ID, nomeCurtoDe } from '@/data/exercicios';
-import { PLANO, TREINOS } from '@/data/treinos';
 import { duracaoMediaDaSerie } from '@/domain/forca';
 import { sessoesDaSemana } from '@/domain/historico';
 import {
@@ -18,6 +17,7 @@ import {
 import type { GrupoMuscular } from '@/domain/types';
 import { FAIXA_DE_VOLUME, volumeSemanal } from '@/domain/volume';
 import { useHistorico } from '@/estado/historico';
+import { usePlano } from '@/estado/perfil';
 import { formatarKg } from '@/lib/formato';
 import { accent, hit, neutral, radius, space, surface } from '@/theme/tokens';
 
@@ -41,10 +41,9 @@ const NOME_DO_GRUPO: Record<GrupoMuscular, string> = {
   quadriceps: 'Quadríceps', posterior: 'Posterior', gluteo: 'Glúteo', panturrilha: 'Panturrilha', core: 'Core',
 };
 
-const GRUPOS_DO_PLANO = gruposDoPlano(TREINOS, EXERCICIOS_POR_ID);
-
 export default function Progresso() {
   const { sessoes, carregado } = useHistorico();
+  const plano = usePlano();
   const [periodo, setPeriodo] = useState<number>(PERIODOS[0].semanas);
   // Relógio lido uma vez, na montagem — render puro (react-hooks/purity). Troca de aba é
   // `replace`, então voltar ao Progresso remonta a tela e relê a hora.
@@ -58,12 +57,12 @@ export default function Progresso() {
 
   const volume = completarGrupos(
     volumeSemanal(seriesDosUltimosDias(sessoes, agora), EXERCICIOS_POR_ID),
-    GRUPOS_DO_PLANO,
+    gruposDoPlano(plano.treinos, EXERCICIOS_POR_ID),
   );
   // A régua vai até o teto da faixa — ou além, se alguém passou dele.
   const escala = Math.max(FAIXA_DE_VOLUME.max, ...volume.map((v) => v.series));
   const pior = maisNegligenciado(volume);
-  const ondeArrumar = pior && treinoQueTrabalha(pior.grupo, TREINOS, EXERCICIOS_POR_ID);
+  const ondeArrumar = pior && treinoQueTrabalha(pior.grupo, plano.treinos, EXERCICIOS_POR_ID);
   const recordes = recordesRecentes(sessoes);
 
   return (
@@ -93,13 +92,24 @@ export default function Progresso() {
               <Texto papel="h2" cor={neutral.n300}>treinos / semana</Texto>
             </View>
             <Texto papel="desc">
-              Meta {PLANO.dias.length} · {frequencia.total} treinos em {frequencia.semanas}{' '}
+              Meta {plano.dias.length} · {frequencia.total} treinos em {frequencia.semanas}{' '}
               {frequencia.semanas === 1 ? 'semana' : 'semanas'}
             </Texto>
             <Texto papel="desc">
-              Esta semana {nestaSemana} de {PLANO.dias.length}
+              Esta semana {nestaSemana} de {plano.dias.length}
               {serieMedia > 0 ? ` · série média ${serieMedia} s` : ''}
             </Texto>
+          </View>
+
+          {/* Cada treino concluído, para rever, corrigir ou apagar (RN-40). Todos, não só os do período. */}
+          <View style={estilos.historico}>
+            <LinhaDeAjuste
+              rotulo="Histórico de treinos"
+              valor={sessoes.length > 0 ? String(sessoes.length) : 'nenhum ainda'}
+              // Rota nova (src/app/historico): os tipos do expo-router só a conhecem depois de regerados.
+              onPress={() => router.push('/historico' as Href)}
+              ultima
+            />
           </View>
 
           <View style={estilos.secao}>
@@ -166,6 +176,7 @@ const estilos = StyleSheet.create({
   chipAtivo: { backgroundColor: neutral.n100, borderColor: neutral.n100 },
   resumo: { gap: space.s1 },
   numero: { flexDirection: 'row', alignItems: 'baseline', gap: space.s3, marginBottom: space.s2 },
+  historico: { borderTopWidth: 1, borderBottomWidth: 1, borderColor: surface.line },
   secao: { gap: space.s4 },
   divisor: { height: 1, backgroundColor: surface.line, marginBottom: space.s4 },
   tituloRecordes: { marginBottom: space.s1 },

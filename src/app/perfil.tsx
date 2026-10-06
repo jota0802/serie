@@ -9,29 +9,36 @@ import { TelaDeAba } from '@/components/tela-de-aba';
 import { Texto } from '@/components/texto';
 import { EXERCICIOS_POR_ID } from '@/data/exercicios';
 import { formatarDataCsv, gerarCsv } from '@/domain/csv';
+import { useAuth } from '@/estado/auth';
 import { useHistorico } from '@/estado/historico';
+import { usePerfil, usePlano } from '@/estado/perfil';
 import { compartilharCsv } from '@/lib/compartilhar-csv';
 import { accent, font, hit, neutral, radius, size, space, surface } from '@/theme/tokens';
 
 /**
  * Tela 21 · Perfil — ajustes e os dados da pessoa.
  *
- * Os ajustes de treino são SÓ LEITURA no CP5 (mockados, sem backend): mostram as regras
- * que o app já aplica — descanso da `CAR-6`, anilhas do catálogo. Por isso não têm chevron.
- * O que tem ação é real: exportar o histórico em CSV, apagar os dados e sair.
+ * O nome e as respostas da montagem vêm do perfil da conta (Supabase). Os ajustes de treino são
+ * só leitura: mostram as regras que o app já aplica — descanso da `CAR-6`, anilhas do catálogo.
+ * O que tem ação é real: exportar o histórico em CSV, apagar o histórico (no aparelho e na
+ * nuvem) e sair da conta. O cabeçalho diz se há treino esperando rede para subir.
  *
  * ⚠️ "Apagar meus dados" confirma NA PRÓPRIA LINHA, não com `Alert.alert`: no
  * react-native-web o Alert não faz nada, e o botão pareceria quebrado no navegador.
  */
-const PERFIL = { nome: 'João', objetivo: 'Hipertrofia' } as const;
+const OBJETIVO = { hipertrofia: 'Hipertrofia', forca: 'Força', condicionamento: 'Condicionamento' } as const;
 
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho',
   'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 
-type Aviso = 'exportado' | 'apagado' | 'erro' | 'vazio' | null;
+type Aviso = 'exportado' | 'apagado' | 'erro' | 'vazio' | { erro: string } | null;
 
 export default function Perfil() {
-  const { sessoes, carregado, restaurarFabrica } = useHistorico();
+  const { sessoes, carregado, pendentes, apagarHistorico } = useHistorico();
+  const { perfil } = usePerfil();
+  const { dias } = usePlano();
+  const { usuario, sair } = useAuth();
+  const nome = perfil.nome.trim() || usuario?.email?.split('@')[0] || 'Você';
   const [confirmando, setConfirmando] = useState(false);
   const [aviso, setAviso] = useState<Aviso>(null);
 
@@ -60,10 +67,16 @@ export default function Perfil() {
     }
   };
 
-  const apagar = () => {
-    restaurarFabrica();
+  const apagar = async () => {
+    const erro = await apagarHistorico();
     setConfirmando(false);
-    setAviso('apagado');
+    setAviso(erro ? { erro } : 'apagado');
+  };
+
+  const sairDaConta = async () => {
+    await sair();
+    // Deslogado, as telas do app deixam de existir (rotas protegidas); volta para a Abertura.
+    router.replace('/');
   };
 
   return (
@@ -77,19 +90,29 @@ export default function Perfil() {
     >
       <View style={estilos.cabecalho}>
         <View style={estilos.avatar}>
-          <Texto style={estilos.inicial}>{PERFIL.nome[0]}</Texto>
+          <Texto style={estilos.inicial}>{nome[0]?.toUpperCase()}</Texto>
         </View>
         <View style={estilos.cabecalhoTexto}>
-          <Texto papel="h2">{PERFIL.nome}</Texto>
+          <Texto papel="h2">{nome}</Texto>
           <Texto papel="desc">
             {sessoes.length} {sessoes.length === 1 ? 'treino' : 'treinos'}{desde}
+          </Texto>
+          {/* Offline-first à vista: o treino feito no subsolo espera a rede, e a pessoa sabe disso. */}
+          <Texto papel="desc" cor={pendentes > 0 ? neutral.n200 : neutral.n400}>
+            {pendentes > 0
+              ? `${pendentes} ${pendentes === 1 ? 'treino aguardando' : 'treinos aguardando'} conexão para subir`
+              : 'Tudo salvo na nuvem'}
           </Texto>
         </View>
       </View>
 
       <View>
         <Texto papel="eyebrow" style={estilos.tituloSecao}>Treino</Texto>
-        <LinhaDeAjuste rotulo="Objetivo" valor={PERFIL.objetivo} />
+        <LinhaDeAjuste rotulo="Objetivo" valor={perfil.objetivo ? OBJETIVO[perfil.objetivo] : '—'} />
+        {/* Os dias vêm do PLANO (editáveis em Treinos — RN-16), não da resposta da montagem. */}
+        <LinhaDeAjuste rotulo="Dias por semana" valor={dias.length ? String(dias.length) : '—'} />
+        {/* Refazer as três perguntas gera um plano novo (06–09 já chegam preenchidas com o atual). */}
+        <LinhaDeAjuste rotulo="Refazer o plano" onPress={() => router.push('/montagem')} />
         <LinhaDeAjuste rotulo="Unidade" valor="kg" />
         {/* Espaço fixo (U+00A0) dentro de cada item: em tela estreita o valor quebra entre os itens, nunca em "2 kg / halter". */}
         <LinhaDeAjuste rotulo="Descanso padrão" valor={'90\xa0s\xa0composto · 60\xa0s\xa0isolado'} />
@@ -102,7 +125,7 @@ export default function Perfil() {
         {confirmando ? (
           <View style={estilos.confirmacao}>
             <Texto papel="desc" cor={neutral.n200}>
-              Apagar os treinos registrados? O histórico volta ao de fábrica e não dá para desfazer.
+              Apagar todos os treinos registrados? Some do aparelho e da nuvem, e não dá para desfazer.
             </Texto>
             <View style={estilos.botoes}>
               <Pressable
@@ -115,7 +138,7 @@ export default function Perfil() {
               <Pressable
                 onPress={apagar}
                 accessibilityRole="button"
-                accessibilityLabel="Apagar meus dados de vez"
+                accessibilityLabel="Apagar meu histórico de vez"
                 style={[estilos.botao, estilos.botaoPerigo]}
               >
                 <Texto papel="corpo" cor={neutral.n0}>Apagar</Texto>
@@ -124,7 +147,7 @@ export default function Perfil() {
           </View>
         ) : (
           <LinhaDeAjuste
-            rotulo="Apagar meus dados"
+            rotulo="Apagar meu histórico"
             onPress={() => {
               setAviso(null);
               setConfirmando(true);
@@ -135,7 +158,8 @@ export default function Perfil() {
         {aviso && (
           <Texto papel="desc" accessibilityLiveRegion="polite" style={estilos.aviso}>
             {aviso === 'exportado' && 'Histórico exportado.'}
-            {aviso === 'apagado' && 'Dados apagados. O histórico voltou ao de fábrica.'}
+            {aviso === 'apagado' && 'Histórico apagado, no aparelho e na nuvem.'}
+            {typeof aviso === 'object' && aviso.erro}
             {aviso === 'erro' && 'Não deu para exportar agora. Tente de novo.'}
             {aviso === 'vazio' && 'Nada para exportar ainda: nenhum treino registrado.'}
           </Texto>
@@ -143,9 +167,7 @@ export default function Perfil() {
       </View>
 
       <Pressable
-        // `dismissTo` volta à Abertura que já está na base da pilha (ela fez `push('/hoje')`);
-        // o `replace` empilhava uma segunda. Sem ela na pilha (recarregou aqui), vira `replace`.
-        onPress={() => router.dismissTo('/')}
+        onPress={sairDaConta}
         accessibilityRole="button"
         style={estilos.sair}
       >
