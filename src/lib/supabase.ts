@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createClient, processLock } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import { AppState, Platform } from 'react-native';
 
 import type { Database } from './database.types';
@@ -29,7 +29,8 @@ export const supabase = createClient<Database>(url, chave, {
     // O link de "recuperar senha" é tratado na mão pela tela de redefinir (`redefinir-senha.tsx`),
     // igual no Android e no navegador.
     detectSessionInUrl: false,
-    lock: processLock,
+    // Sem `lock`: desde a 2.117 a supabase-js coordena a renovação da sessão sozinha, e a opção
+    // só gerava um aviso de "deprecated" no log do Android.
   },
 });
 
