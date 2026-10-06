@@ -27,6 +27,11 @@ export interface SessaoEmAndamento {
    * O plano não muda; só esta sessão.
    */
   trocas: Record<number, string>;
+  /**
+   * RN-17 — o treino como estava no plano quando a sessão começou. Editar o plano no meio do
+   * treino não muda o treino em andamento. Opcional: sessão salva por versão antiga não tem.
+   */
+  treino?: Treino;
 }
 
 /** `CAR-8` — quanto tempo uma sessão aberta continua retomável. */
@@ -41,11 +46,23 @@ export function sessaoVencida(s: Pick<SessaoEmAndamento, 'inicioMs'>, agoraMs: n
   return agoraMs - s.inicioMs > VALIDADE_DA_SESSAO_MS;
 }
 
-export function novaSessao(treinoId: string, agoraMs: number): SessaoEmAndamento {
+export function novaSessao(treinoId: string, agoraMs: number, treino?: Treino): SessaoEmAndamento {
   return {
     treinoId, inicioMs: agoraMs, indiceExercicio: 0, indiceSerie: 0,
     registradas: [], inicioSerieMs: null, duracaoUltimaSerieS: null, fimMs: null, trocas: {},
+    ...(treino ? { treino } : {}),
   };
+}
+
+/**
+ * RN-30 — terminar o treino antes do fim. Com pelo menos uma série registrada ele é SALVO como
+ * está (vale para o rodízio e para o histórico; série que faltou não fecha faixa — `CAR-1`).
+ * Sem nenhuma série, não há o que salvar: devolve nulo, e o treino é descartado.
+ */
+export function terminarAgora(s: SessaoEmAndamento, agoraMs: number): SessaoEmAndamento | null {
+  if (s.fimMs) return s;
+  if (s.registradas.length === 0) return null;
+  return { ...s, inicioSerieMs: null, fimMs: agoraMs };
 }
 
 /** O item do treino como ele está NESTA sessão, já com a troca de exercício aplicada. */
@@ -169,6 +186,7 @@ export function sessaoParaRestaurar(texto: string | null, agoraMs: number): Sess
     duracaoUltimaSerieS: s.duracaoUltimaSerieS ?? null,
     fimMs: s.fimMs ?? null,
     trocas: s.trocas ?? {},
+    ...(s.treino && Array.isArray(s.treino.itens) ? { treino: s.treino } : {}),
   };
   return sessaoVencida(restaurada, agoraMs) ? null : restaurada;
 }

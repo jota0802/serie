@@ -65,6 +65,11 @@ export interface ItemDeTreino {
   faixa: Faixa;
   cargaKg: number;
   descansoSegundos?: number;
+  /**
+   * RN-19 — quando a pessoa mudou a carga no "Montar treino". Se for DEPOIS da última vez que
+   * fez o exercício, a carga do plano vale no próximo treino; senão vale a da última vez (`CAR-1`).
+   */
+  cargaDefinidaEmMs?: number;
 }
 
 /** A letra: A, B, C. Lista ordenada de itens. */

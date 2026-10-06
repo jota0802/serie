@@ -42,6 +42,16 @@ alvo de reps ← piso da faixa
 É o método mais usado na musculação real, é auditável, e cabe numa função pura. É também a única
 coisa do app que ninguém mais faz direito.
 
+**`CAR-1.1` A carga parte da última vez.** A "carga" acima é a da **última vez** que você fez o
+exercício — a carga de trabalho, isto é, a maior daquela sessão (uma série aliviada no fim não
+rebaixa o alvo). A carga do plano é só a de **partida**: vale na primeira vez, ou quando você a muda
+de propósito no "Montar treino" depois da última vez (RN-19, em [`regras-do-app.md`](regras-do-app.md)).
+
+> Achado no CP6, simulando três meses de treino com o próprio motor do app: a referência era a
+> carga do plano, então depois de subir para 47,5 kg e não fechar a faixa o alvo **voltava** para
+> os 45 kg — a carga nunca passava do primeiro salto. O teste que prova a correção está em
+> [`progressao-carga.test.ts`](../src/domain/__tests__/progressao-carga.test.ts).
+
 📍 `proximoAlvo()` em [`src/domain/progressao.ts`](../src/domain/progressao.ts)
 
 ## `CAR-2` Nunca campo vazio
@@ -83,18 +93,20 @@ derivado do histórico salvo, em `recordeDe()` de [`src/domain/historico.ts`](..
 Começa sozinho ao encerrar a série. Padrão **90 s composto · 60 s isolado**, editável por exercício.
 A tela do cronômetro é a única desenhada para ser lida a dois metros de distância.
 
-## `CAR-7` Tonelagem
+## `CAR-7` Tonelagem — e por que ela saiu do destaque
 
-`Σ (carga × reps)` da sessão, comparada com a **mesma letra** na vez anterior. É o número dominante
-do resumo. Comparar A com B não significaria nada, então não se compara.
+`Σ (carga × reps)` da sessão, comparada com a **mesma letra** na vez anterior. Comparar A com B não
+significaria nada, então não se compara.
 
-No dia em que a carga sobe, as reps voltam ao piso da faixa e a tonelagem **cai** — é a progressão
-funcionando, não regressão. O resumo não esconde o número: destaca *"carga subiu em N exercícios"* e
-mostra o volume menor logo abaixo, com o porquê.
+**No CP6 ela deixou de ser o número dominante do resumo.** Testando o app, o veredito de quem usa
+foi direto: *"esse número não vale de nada"*. Ninguém treina para mover 3.705 kg — treina para
+subir a carga e as repetições, que é exatamente o que a `CAR-1` mede. O resumo agora abre com
+**em quantos exercícios você evoluiu** ("Você evoluiu em 4 de 5 exercícios · 2 com carga nova,
+2 com mais repetições"), os recordes e, por exercício, **o alvo da próxima vez**. A tonelagem
+continua calculada (o histórico usa), só não ocupa mais o lugar de destaque.
 
-📍 `tonelagem()` em [`src/domain/forca.ts`](../src/domain/forca.ts); a comparação com a mesma letra
-em `ultimaTonelagem()` ([`src/domain/historico.ts`](../src/domain/historico.ts)) e o texto do resumo
-em `comparacaoDoResumo()` ([`src/domain/resumo.ts`](../src/domain/resumo.ts))
+📍 `tonelagem()` em [`src/domain/forca.ts`](../src/domain/forca.ts); o destaque do resumo em
+`progressoDoTreino()` e `fraseDoProgresso()` ([`src/domain/resumo.ts`](../src/domain/resumo.ts))
 
 ## `CAR-8` Sessão aberta expira em 6 h
 

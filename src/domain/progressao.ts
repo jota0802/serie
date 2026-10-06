@@ -29,17 +29,26 @@ export function fechouAFaixa(series: SerieRegistrada[], faixa: Faixa, seriesEspe
  * - Não fechou → mesma carga, e cada série mira UMA repetição a mais que da última vez
  *   (limitada ao topo da faixa). É assim que a progressão acontece dentro da faixa.
  * - Sem histórico → a carga do plano, mirando o piso da faixa.
+ *
+ * ⚠️ A carga de referência é a da ÚLTIMA VEZ (a carga de trabalho: a maior daquela sessão), não
+ * a do plano. A do plano é só a de partida — ou a que a pessoa mudou de propósito no "Montar
+ * treino" depois da última vez (RN-19, `cargaDoPlanoVale`). Antes desta regra, depois de subir
+ * para 47,5 kg e não fechar a faixa, o alvo VOLTAVA para os 45 kg do plano: a carga nunca passava
+ * do primeiro salto. Achado simulando 3 meses de treino com este mesmo motor.
  */
 export function proximoAlvo(params: {
   ultimaSessao: SerieRegistrada[];
   faixa: Faixa;
+  /** A carga do PLANO para o exercício. */
   cargaAtualKg: number;
   incrementoKg: number;
   series: number;
+  /** RN-19 — a carga do plano foi mudada DEPOIS da última vez: recomeça a faixa nela. */
+  cargaDoPlanoVale?: boolean;
 }): Alvo[] {
-  const { ultimaSessao, faixa, cargaAtualKg, incrementoKg, series } = params;
+  const { ultimaSessao, faixa, cargaAtualKg, incrementoKg, series, cargaDoPlanoVale = false } = params;
 
-  if (ultimaSessao.length === 0) {
+  if (ultimaSessao.length === 0 || cargaDoPlanoVale) {
     return Array.from({ length: series }, () => ({
       cargaKg: cargaAtualKg,
       reps: faixa.min,
@@ -47,8 +56,11 @@ export function proximoAlvo(params: {
     }));
   }
 
+  // A carga de trabalho da última vez: série aliviada no fim não rebaixa o alvo de hoje.
+  const base = Math.max(...ultimaSessao.map((s) => s.cargaKg));
+
   if (fechouAFaixa(ultimaSessao, faixa, series)) {
-    const nova = arredondarParaAnilha(cargaAtualKg + incrementoKg, incrementoKg);
+    const nova = arredondarParaAnilha(base + incrementoKg, incrementoKg);
     return Array.from({ length: series }, () => ({
       cargaKg: nova,
       reps: faixa.min,
@@ -59,7 +71,7 @@ export function proximoAlvo(params: {
   return Array.from({ length: series }, (_, i) => {
     const anterior = ultimaSessao[i];
     const reps = anterior ? Math.min(faixa.max, anterior.reps + 1) : faixa.min;
-    return { cargaKg: cargaAtualKg, reps, origem: 'repetir' as const };
+    return { cargaKg: base, reps, origem: 'repetir' as const };
   });
 }
 
