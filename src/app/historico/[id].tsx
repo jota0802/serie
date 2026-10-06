@@ -5,7 +5,6 @@ import {
 } from 'react-native';
 
 import { BotaoPrimario } from '@/components/botao-primario';
-import { Card } from '@/components/card';
 import { AcaoDestrutiva, ConfirmacaoDestrutiva } from '@/components/confirmacao-destrutiva';
 import {
   diaCurto, diaPorExtenso, hora, minutosDoTreino, nomeDoTreino, recordesPorSessao, repsDe, seriesPorExercicio,
@@ -17,19 +16,18 @@ import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { Voltar } from '@/components/voltar';
 import { EXERCICIOS_POR_ID, nomeCurtoDe } from '@/data/exercicios';
-import { tonelagem } from '@/domain';
 import { corrigirSerie, removerSerie } from '@/domain/historico';
 import { useHistorico } from '@/estado/historico';
 import { usePlano } from '@/estado/perfil';
-import { formatarKg, formatarMilhar } from '@/lib/formato';
-import { accent, hit, neutral, radius, space, surface } from '@/theme/tokens';
+import { formatarKg, formatarMilhar, formatarTempo } from '@/lib/formato';
+import { accent, hit, neutral, space, surface } from '@/theme/tokens';
 
 /**
  * Detalhe de um treino concluído — onde ele é corrigido ou apagado (RN-40 a RN-43).
  *
- * Número dominante: O VOLUME (a tonelagem, `CAR-7`): o mesmo número do resumo daquele dia, só que
- * recalculado das séries como elas estão agora. Treino só de peso do corpo não tem volume em kg, e
- * o número vira as repetições — "0 kg" no lugar mais visível da tela seria mentira.
+ * No topo, os números de relance do resumo (minutos, séries, reps e tempo sob tensão), recalculados
+ * das séries como elas estão agora. Sem a tonelagem de destaque: o total de kg levantado não diz
+ * nada sobre o treino (a mesma decisão do resumo, `CAR-7`). Os recordes vêm em ouro, sem caixa.
  *
  * - Tocar numa série abre a correção NA LINHA (reps e carga); quem aceita ou recusa é o domínio
  *   (`corrigirSerie`, que também tira o `foiAlvo` — RN-41) e o motivo da recusa fica na linha.
@@ -98,8 +96,9 @@ export default function DetalheDoTreino() {
   const nomeDe = (exercicioId: string) => nomeCurtoDe(EXERCICIOS_POR_ID.get(exercicioId), exercicioId);
   const corporal = (exercicioId: string) => EXERCICIOS_POR_ID.get(exercicioId)?.unidade === 'corporal';
 
-  const volume = tonelagem(sessao.series);
   const reps = repsDe(sessao.series);
+  // `CAR-11.1`: o cronômetro de cada série. Treino antigo ou digitado pode não ter: aí não aparece.
+  const tensao = sessao.series.reduce((soma, s) => soma + (s.duracaoSegundos ?? 0), 0);
   const minutos = minutosDoTreino(sessao);
   const grupos = seriesPorExercicio(sessao.series);
   const nome = nomeDoTreino(sessao.treinoId, porId);
@@ -157,41 +156,41 @@ export default function DetalheDoTreino() {
             <Texto papel="desc">{hora(sessao.inicioMs)} às {hora(sessao.fimMs)}</Texto>
           </View>
 
-          <View>
-            <Texto papel="eyebrow">{volume > 0 ? 'Volume' : 'Repetições'}</Texto>
-            <View style={estilos.numero}>
-              <Texto papel="mega">{formatarMilhar(volume > 0 ? volume : reps)}</Texto>
-              <Texto papel="h2" cor={neutral.n200}>{volume > 0 ? ' kg' : ' reps'}</Texto>
-            </View>
-          </View>
-
+          {/* Os números de relance, os mesmos do resumo. Singular no 1: "1 MINUTOS" sai em caixa alta. */}
           <View style={estilos.estatisticas}>
-            {/* Singular no 1, como no resumo: "1 MINUTOS" sai em caixa alta. */}
             <Estatistica valor={String(minutos)} rotulo={minutos === 1 ? 'minuto' : 'minutos'} />
             <Estatistica valor={String(sessao.series.length)} rotulo={sessao.series.length === 1 ? 'série' : 'séries'} />
-            {volume > 0 && <Estatistica valor={formatarMilhar(reps)} rotulo={reps === 1 ? 'rep' : 'reps'} />}
+            <Estatistica valor={formatarMilhar(reps)} rotulo={reps === 1 ? 'rep' : 'reps'} />
+            {tensao > 0 && <Estatistica valor={formatarTempo(tensao)} rotulo="tensão" />}
           </View>
 
-          {/* CAR-5: o único momento de cor. Recalculado das séries — corrigir pode acender ou apagar o ouro. */}
+          {/* CAR-5: o único momento de cor — sem caixa, só o ouro no texto, como no resumo.
+              Recalculado das séries: corrigir pode acender ou apagar o ouro. */}
           {recordes.length > 0 && (
-            <Card ouro>
-              <Texto papel="eyebrow" cor={accent.signal}>{recordes.length === 1 ? 'Recorde' : 'Recordes'}</Texto>
-              {recordes.map((r) => (
-                <View key={r.exercicioId}>
-                  <Texto papel="h2" cor={accent.signal}>{nomeDe(r.exercicioId)}</Texto>
-                  <Texto papel="desc">
-                    1RM estimado {formatarKg(r.novo)} kg · antes {formatarKg(r.antes)} kg
-                  </Texto>
-                </View>
-              ))}
-            </Card>
+            <View style={estilos.recordes}>
+              <Texto papel="eyebrow" cor={accent.signal}>
+                {recordes.length === 1 ? 'Recorde' : `${recordes.length} recordes`}
+              </Texto>
+              <View>
+                {recordes.map((r) => (
+                  <View key={r.exercicioId} style={estilos.linha}>
+                    <Texto papel="corpo" cor={accent.signal} numberOfLines={1} style={estilos.flex}>
+                      {nomeDe(r.exercicioId)}
+                    </Texto>
+                    <Texto papel="desc" cor={neutral.n400}>antes {formatarKg(r.antes)}</Texto>
+                    <Texto papel="corpo" cor={accent.signal}>{formatarKg(r.novo)} kg</Texto>
+                  </View>
+                ))}
+              </View>
+              <Texto papel="desc" cor={neutral.n400}>1RM estimado pela fórmula de Epley.</Texto>
+            </View>
           )}
 
           <View style={estilos.secao}>
             <View style={estilos.textos}>
               <Texto papel="eyebrow">Séries</Texto>
               {/* RN-43, discreta: é a resposta a "e o que eu já fiz depois disso?". */}
-              <Texto papel="desc">Toque numa série para corrigir. Recordes e volume se recalculam na hora.</Texto>
+              <Texto papel="desc">Toque numa série para corrigir. Recordes e progresso se recalculam na hora.</Texto>
             </View>
 
             {grupos.map((grupo) => {
@@ -272,24 +271,26 @@ const estilos = StyleSheet.create({
   flex: { flex: 1 },
   conteudo: { paddingTop: space.s2, paddingBottom: space.s6, gap: space.s5 },
   textos: { gap: space.s1 },
-  numero: { flexDirection: 'row', alignItems: 'baseline' },
-  estatisticas: { flexDirection: 'row', gap: space.s4 },
-  estatistica: { flex: 1, gap: 2 },
-  secao: { gap: space.s3 },
-  // O cartão da aba Treinos: o nome do exercício em cima, as séries em linhas de borda a borda.
-  exercicio: {
-    backgroundColor: surface.raised,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: surface.line,
-    overflow: 'hidden',
+  estatisticas: { flexDirection: 'row', justifyContent: 'space-between' },
+  estatistica: { gap: space.s1 },
+  recordes: { gap: space.s2 },
+  // Linhas abertas com divisória fina, como as listas do resumo (sem cartão).
+  linha: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: space.s3,
+    paddingVertical: space.s3,
+    borderBottomWidth: 1,
+    borderBottomColor: surface.line,
   },
+  secao: { gap: space.s3 },
+  // Aberto, como o resto do app: o nome do exercício e as séries em linhas, sem cartão em volta.
+  exercicio: { borderBottomWidth: 1, borderBottomColor: surface.line },
   exercicioTopo: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.s3,
     minHeight: hit.row,
-    paddingHorizontal: space.s4,
   },
   exercicioNome: { flex: 1 },
   pressionado: { backgroundColor: surface.rowActive },

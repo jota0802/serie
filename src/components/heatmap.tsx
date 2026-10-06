@@ -39,7 +39,8 @@ const ALTURA_DOS_MESES = space.s4;
 /**
  * A caixa de cada rótulo de mês (cabe "mar" em Manrope 12 com folga). ⚠️ Sem largura, o nativo
  * mede o texto absoluto pelo que sobra até a borda da grade — e o "out" da última coluna, com
- * ~15 px de sobra, sairia cortado em "o…".
+ * ~15 px de sobra, sairia cortado em "o…". E a caixa não pode passar da grade: o Android corta o
+ * que sai do pai (o "out" virava "ou"), então o último rótulo encosta na borda direita.
  */
 const LARGURA_DO_MES = PASSO + space.s3;
 
@@ -104,6 +105,7 @@ export function Heatmap({ colunas, selecionado, aoSelecionar }: HeatmapProps) {
   const abriuNoFim = useRef(false);
 
   const meses = useMemo(() => rotulosDosMeses(colunas), [colunas]);
+  const larguraDaGrade = colunas.length * PASSO;
   const hoje = colunas[colunas.length - 1]?.find((d) => d.hoje);
   // O ano de hoje, não o do domingo da última coluna: em 2 de janeiro ele ainda é do ano passado.
   const ano = hoje ? new Date(hoje.inicioMs).getFullYear() : 0;
@@ -162,7 +164,7 @@ export function Heatmap({ colunas, selecionado, aoSelecionar }: HeatmapProps) {
                 papel="nav"
                 cor={neutral.n300}
                 numberOfLines={1}
-                style={[estilos.mes, { left: coluna * PASSO + ESPACO / 2 }]}
+                style={[estilos.mes, { left: Math.min(coluna * PASSO + ESPACO / 2, larguraDaGrade - LARGURA_DO_MES) }]}
               >
                 {rotulo}
               </Texto>

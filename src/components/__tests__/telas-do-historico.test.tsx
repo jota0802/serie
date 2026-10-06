@@ -197,15 +197,20 @@ describe('Histórico (lista)', () => {
 // ---- o detalhe ------------------------------------------------------------------------------
 
 describe('Detalhe do treino', () => {
-  it('cabeçalho, volume como número dominante, recorde e as séries por exercício', () => {
+  it('cabeçalho, os números de relance (sem tonelagem), o recorde em ouro e as séries por exercício', () => {
     const texto = tudo(montar(<DetalheDoTreino />));
     expect(texto).toContain('Treino A · Peito e tríceps');
     expect(texto).toContain('19:00 às 19:52');
-    expect(texto).toContain('808 kg');
-    expect(texto).toContain('1RM estimado 56,7 kg · antes 53,3 kg');
+    // Os mesmos números do resumo; sem cronômetro nas séries, a tensão não aparece.
+    expect(texto).toContain('52minutos3séries34reps');
+    expect(texto).not.toContain('tensão');
+    // O total de kg levantado não é destaque (nem aparece) no detalhe.
+    expect(texto).not.toContain('808 kg');
+    expect(texto).toContain('Supino retoantes 53,356,7 kg');
+    expect(texto).toContain('1RM estimado pela fórmula de Epley.');
     expect(texto).toContain('1ª10 × 42,5 kg');
     expect(texto).toContain('1ª15 reps · peso do corpo');
-    expect(texto).toContain('Recordes e volume se recalculam na hora.');
+    expect(texto).toContain('Recordes e progresso se recalculam na hora.');
   });
 
   it('RN-40: corrige na linha — campo vazio é recusado com o motivo, e o número certo é salvo', () => {

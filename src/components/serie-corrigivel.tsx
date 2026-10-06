@@ -147,12 +147,12 @@ function Correcao({ ordinal, serie, exercicio, aoFechar, aoSalvar, aoTirar, bloq
 
 const estilos = StyleSheet.create({
   // 56, não 44: é linha de série — mão suada, e a correção costuma vir ainda na academia.
+  // Sem recuo lateral: o detalhe do treino é aberto (sem cartão), a linha vai de borda a borda do texto.
   linha: {
     minHeight: hit.row,
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.s3,
-    paddingHorizontal: space.s4,
     borderTopWidth: 1,
     borderTopColor: surface.line,
   },
