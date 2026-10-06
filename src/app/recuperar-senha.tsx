@@ -3,9 +3,11 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AvisoDeFormulario } from '@/components/aviso-de-formulario';
 import { BotaoPrimario } from '@/components/botao-primario';
 import { Campo } from '@/components/campo';
 import { Voltar } from '@/components/voltar';
+import { useAuth } from '@/estado/auth';
 import { font, neutral, space, surface } from '@/theme/tokens';
 
 /**
@@ -17,12 +19,26 @@ import { font, neutral, space, surface } from '@/theme/tokens';
  * final de 20 px antes do home indicator — diferente do 16 padrão das outras
  * telas, e vem do Figma assim mesmo.
  *
- * O envio do link é do CP6 (Supabase). Aqui o botão apenas avança pra 05 ·
- * Link enviado, que é a confirmação visual do fluxo.
+ * Manda o link de verdade (Supabase Auth). O link abre a tela de redefinir senha no app
+ * (serie://…) ou no navegador; só depois do envio dar certo a 05 confirma.
  */
 export default function RecuperarSenha() {
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const { recuperarSenha } = useAuth();
+
+  const enviar = async () => {
+    if (enviando) return;
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErro('Confira o e-mail: ele parece inválido.');
+    setErro(null);
+    setEnviando(true);
+    const falha = await recuperarSenha(email);
+    setEnviando(false);
+    if (falha) return setErro(falha);
+    router.push({ pathname: '/link-enviado', params: { email: email.trim() } });
+  };
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top', 'bottom']}>
@@ -51,12 +67,13 @@ export default function RecuperarSenha() {
             autoComplete="email"
             autoCorrect={false}
             returnKeyType="go"
-            onSubmitEditing={() => router.push({ pathname: '/link-enviado', params: { email } })}
+            onSubmitEditing={enviar}
           />
+          <AvisoDeFormulario>{erro}</AvisoDeFormulario>
 
           <View style={estilos.espaco} />
 
-          <BotaoPrimario onPress={() => router.push({ pathname: '/link-enviado', params: { email } })}>Enviar link</BotaoPrimario>
+          <BotaoPrimario onPress={enviar} desabilitado={enviando}>{enviando ? 'Enviando…' : 'Enviar link'}</BotaoPrimario>
 
           <View style={estilos.gap} />
         </View>

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BotaoPrimario } from '@/components/botao-primario';
 import { Marca } from '@/components/marca';
+import { Surgir } from '@/components/surgir';
 import { font, neutral, space, surface } from '@/theme/tokens';
 
 /**
@@ -26,7 +27,8 @@ export default function Abertura() {
       <View style={estilos.body}>
         <View style={estilos.espaco} />
 
-        <View style={estilos.marca}>
+        {/* A marca surge primeiro; as ações, depois — a promessa antes do pedido. */}
+        <Surgir ordem={0} style={estilos.marca}>
           <Marca largura={60} pill />
           <View style={estilos.nome}>
             <Text style={estilos.serie}>Série.</Text>
@@ -34,16 +36,17 @@ export default function Abertura() {
               Ele não te dá treino.{'\n'}Ele te diz o que bater hoje.
             </Text>
           </View>
-        </View>
+        </Surgir>
 
         <View style={estilos.espaco} />
 
-        <View style={estilos.acoes}>
-          <BotaoPrimario onPress={() => router.push('/hoje')}>Montar meu treino</BotaoPrimario>
+        <Surgir ordem={3} style={estilos.acoes}>
+          {/* Conta primeiro: o plano e o histórico são da conta (Supabase), e a montagem vem logo depois. */}
+          <BotaoPrimario onPress={() => router.push('/criar-conta')}>Montar meu treino</BotaoPrimario>
           <BotaoPrimario variante="secundario" onPress={() => router.push('/entrar')}>
             Já tenho conta
           </BotaoPrimario>
-        </View>
+        </Surgir>
 
         <View style={estilos.gap} />
       </View>

@@ -3,7 +3,9 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AvisoDeFormulario } from '@/components/aviso-de-formulario';
 import { BotaoPrimario } from '@/components/botao-primario';
+import { useAuth } from '@/estado/auth';
 import { useEspera } from '@/hooks/use-espera';
 import { formatarTempo } from '@/lib/formato';
 import { font, neutral, radius, space, surface } from '@/theme/tokens';
@@ -18,9 +20,9 @@ const ESPERA_PARA_REENVIAR_S = 30;
  * 72 × 72 com um check preto dentro, título e descrição centralizados, dois
  * espaços flex que empurram o botão pra baixo, e um link "Reenviar" logo depois.
  *
- * O reenvio de link vive no CP6 (Supabase). Aqui o botão "Voltar para entrar"
- * usa `replace` para tirar essa tela da pilha — quem chega aqui e volta não
- * quer o botão de voltar da 04 de novo.
+ * "Reenviar" manda o link de novo (Supabase Auth), com 30 s de espera entre um e outro — o
+ * próprio Supabase limita os e-mails por hora. "Voltar para entrar" usa `replace` para tirar
+ * essa tela da pilha — quem chega aqui e volta não quer o botão de voltar da 04 de novo.
  */
 export default function LinkEnviado() {
   const router = useRouter();
@@ -33,12 +35,16 @@ export default function LinkEnviado() {
   // é o mesmo contrato do protótipo. O que NÃO pode é o toque não dar resposta nenhuma — e
   // o cooldown de 30 s impede martelar o botão (no CP6, cada toque seria um e-mail).
   const [reenviou, setReenviou] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
   const { restante, armar } = useEspera();
+  const { recuperarSenha } = useAuth();
   const esperando = restante > 0;
-  const reenviar = () => {
-    if (esperando) return;
-    setReenviou(true);
+  const reenviar = async () => {
+    if (esperando || !email?.trim()) return;
     armar(ESPERA_PARA_REENVIAR_S);
+    const falha = await recuperarSenha(email);
+    setErro(falha);
+    setReenviou(!falha);
   };
 
   return (
@@ -77,6 +83,7 @@ export default function LinkEnviado() {
                 : 'Não chegou? Reenviar'}
           </Text>
         </Pressable>
+        <AvisoDeFormulario>{erro}</AvisoDeFormulario>
 
         <View style={estilos.gap} />
       </View>

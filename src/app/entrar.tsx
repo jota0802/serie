@@ -1,13 +1,14 @@
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { KeyboardAvoidingView } from 'react-native';
-import { Platform } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AvisoDeFormulario } from '@/components/aviso-de-formulario';
 import { BotaoPrimario } from '@/components/botao-primario';
 import { Campo } from '@/components/campo';
+import { Surgir } from '@/components/surgir';
 import { Voltar } from '@/components/voltar';
+import { useAuth } from '@/estado/auth';
 import { font, neutral, space, surface } from '@/theme/tokens';
 
 /**
@@ -18,14 +19,30 @@ import { font, neutral, space, surface } from '@/theme/tokens';
  * por 16, link "Esqueci minha senha" alinhado à direita, e o rodapé com o
  * botão primário + a linha "Não tem conta? Criar conta".
  *
- * Autenticação é do CP6 (Supabase, a confirmar em `docs/decisoes-tecnicas.md`);
- * por ora "Entrar" segue direto pra `/hoje` — a intenção do fluxo já fica clara
- * e as regras `CAR-*` que sustentam a tela seguinte já funcionam.
+ * Login de verdade (Supabase Auth). Deu certo, não há `router.push`: a tela deixa de valer
+ * para quem está logado (rotas protegidas no `_layout`) e o app leva para o Hoje — ou para
+ * a montagem, se a conta ainda não tem plano.
  */
 export default function Entrar() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const { entrar } = useAuth();
+
+  const enviar = async () => {
+    if (enviando) return;
+    if (!email.trim() || !senha) {
+      setErro('Preencha o e-mail e a senha.');
+      return;
+    }
+    setErro(null);
+    setEnviando(true);
+    const falha = await entrar(email, senha);
+    setEnviando(false);
+    if (falha) setErro(falha);
+  };
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top', 'bottom']}>
@@ -36,9 +53,11 @@ export default function Entrar() {
         <View style={estilos.body}>
           <Voltar onPress={() => router.back()} />
 
-          <Text style={estilos.titulo}>Entrar</Text>
+          <Surgir ordem={0}>
+            <Text style={estilos.titulo}>Entrar</Text>
+          </Surgir>
 
-          <View style={estilos.campos}>
+          <Surgir ordem={1} style={estilos.campos}>
             <Campo
               rotulo="E-mail"
               value={email}
@@ -58,8 +77,9 @@ export default function Entrar() {
               placeholder="••••••••"
               autoComplete="password"
               returnKeyType="go"
-              onSubmitEditing={() => router.push('/hoje')}
+              onSubmitEditing={enviar}
             />
+            <AvisoDeFormulario>{erro}</AvisoDeFormulario>
             <View style={estilos.esqueci}>
               <Pressable
                 onPress={() => router.push('/recuperar-senha')}
@@ -69,11 +89,11 @@ export default function Entrar() {
                 <Text style={estilos.linkFraco}>Esqueci minha senha</Text>
               </Pressable>
             </View>
-          </View>
+          </Surgir>
 
           <View style={estilos.espaco} />
 
-          <BotaoPrimario onPress={() => router.push('/hoje')}>Entrar</BotaoPrimario>
+          <BotaoPrimario onPress={enviar} desabilitado={enviando}>{enviando ? 'Entrando…' : 'Entrar'}</BotaoPrimario>
 
           <Pressable
             onPress={() => router.push('/criar-conta')}

@@ -3,9 +3,12 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { AvisoDeFormulario } from '@/components/aviso-de-formulario';
 import { BotaoPrimario } from '@/components/botao-primario';
 import { Campo } from '@/components/campo';
+import { Surgir } from '@/components/surgir';
 import { Voltar } from '@/components/voltar';
+import { useAuth } from '@/estado/auth';
 import { font, neutral, space, surface } from '@/theme/tokens';
 
 /**
@@ -16,15 +19,30 @@ import { font, neutral, space, surface } from '@/theme/tokens';
  * três campos (Nome · E-mail · Senha), a dica "Mínimo 8 caracteres" logo
  * abaixo do último campo, e o texto legal centrado antes do botão.
  *
- * A criação de conta real é do CP6 (Supabase). Aqui o botão "Criar conta"
- * inicia o onboarding (`/hoje` por ora, `/montar/1` quando as telas 06–09
- * entrarem no CP5).
+ * Cria a conta de verdade (Supabase Auth); o nome vai junto e o banco cria o perfil com ele.
+ * Deu certo, a pessoa já está logada e sem plano: as rotas protegidas levam para a montagem
+ * (06–09). A senha segue a dica da tela: mínimo de 8, o mesmo que o Supabase exige.
  */
 export default function CriarConta() {
   const router = useRouter();
   const [nome, setNome] = useState('');
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [enviando, setEnviando] = useState(false);
+  const [erro, setErro] = useState<string | null>(null);
+  const { criarConta } = useAuth();
+
+  const enviar = async () => {
+    if (enviando) return;
+    if (!nome.trim()) return setErro('Como podemos te chamar? Preencha o nome.');
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return setErro('Confira o e-mail: ele parece inválido.');
+    if (senha.length < 8) return setErro('A senha precisa de pelo menos 8 caracteres.');
+    setErro(null);
+    setEnviando(true);
+    const falha = await criarConta(nome, email, senha);
+    setEnviando(false);
+    if (falha) setErro(falha);
+  };
 
   return (
     <SafeAreaView style={estilos.tela} edges={['top', 'bottom']}>
@@ -35,9 +53,11 @@ export default function CriarConta() {
         <View style={estilos.body}>
           <Voltar onPress={() => router.back()} />
 
-          <Text style={estilos.titulo}>Criar conta</Text>
+          <Surgir ordem={0}>
+            <Text style={estilos.titulo}>Criar conta</Text>
+          </Surgir>
 
-          <View style={estilos.campos}>
+          <Surgir ordem={1} style={estilos.campos}>
             <Campo
               rotulo="Nome"
               value={nome}
@@ -66,10 +86,11 @@ export default function CriarConta() {
               placeholder="••••••••"
               autoComplete="password-new"
               returnKeyType="go"
-              onSubmitEditing={() => router.push('/hoje')}
+              onSubmitEditing={enviar}
             />
             <Text style={estilos.dica}>Mínimo 8 caracteres</Text>
-          </View>
+            <AvisoDeFormulario>{erro}</AvisoDeFormulario>
+          </Surgir>
 
           <View style={estilos.espaco} />
 
@@ -79,7 +100,7 @@ export default function CriarConta() {
 
           <View style={estilos.gapAntesDoBotao} />
 
-          <BotaoPrimario onPress={() => router.push('/hoje')}>Criar conta</BotaoPrimario>
+          <BotaoPrimario onPress={enviar} desabilitado={enviando}>{enviando ? 'Criando…' : 'Criar conta'}</BotaoPrimario>
 
           <Pressable
             onPress={() => router.push('/entrar')}
