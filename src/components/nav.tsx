@@ -13,7 +13,7 @@ import { glass, hit, neutral, space, surface } from '@/theme/tokens';
  * passear pelas abas empilharia telas e o "voltar" do Android desfaria cada toque.
  */
 const ABAS = [
-  { chave: 'hoje', rotulo: 'Hoje', rota: '/hoje', Icone: IconeHoje },
+  { chave: 'hoje', rotulo: 'Início', rota: '/hoje', Icone: IconeHoje },
   { chave: 'progresso', rotulo: 'Progresso', rota: '/progresso', Icone: IconeProgresso },
   { chave: 'treinos', rotulo: 'Treinos', rota: '/treinos', Icone: IconeTreinos },
   { chave: 'perfil', rotulo: 'Perfil', rota: '/perfil', Icone: IconePerfil },

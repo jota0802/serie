@@ -71,7 +71,10 @@ export const surface = {
  */
 export const glass = {
   thin: 'rgba(255,255,255,0.05)',
-  thick: 'rgba(26,26,26,0.90)',
+  // Opaco de propósito: sem desfoque (o React Native não desfoca sem biblioteca, nem no Android
+  // nem no navegador), 10% de transparência bastavam para o botão claro da tela de trás atravessar
+  // a folha e aparecer embaixo do "Descartar treino". Mesma cor do vidro, sem o vazamento.
+  thick: '#1A1A1A',
   line: 'rgba(255,255,255,0.10)',
   blur: 22,
 } as const;
@@ -116,7 +119,18 @@ export const radius = { sm: 8, md: 12, lg: 18, xl: 24, full: 999 } as const;
  */
 export const hit = { min: 44, row: 56, cta: 60 } as const;
 
-export const motion = { tap: 90, ui: 180, sheet: 280 } as const;
+/**
+ * Movimento. Curto e sem enfeite: animação aqui ORIENTA (de onde veio, o que é novo), não decora.
+ * - `entrada`: o conteúdo de uma tela surge subindo `deslocamento` px, um bloco depois do outro
+ *   (`passo`), no máximo até o 8º bloco — o resto já entra junto, para nada ficar esperando;
+ * - `contagem`: o número dominante do resumo sobe até o valor (a celebração do fim do treino).
+ * Tudo respeita o "reduzir movimento" do sistema.
+ */
+export const motion = {
+  tap: 90, ui: 180, sheet: 280,
+  entrada: 280, passo: 45, deslocamento: 12, maxPassos: 8,
+  contagem: 800,
+} as const;
 
 /**
  * Relevo RACIONADO: no máximo UM elemento em relevo por tela, e ele é sempre a
