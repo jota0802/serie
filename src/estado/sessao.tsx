@@ -3,14 +3,15 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { AppState } from 'react-native';
 
 import { EXERCICIOS_POR_ID } from '@/data/exercicios';
-import { TREINOS_POR_ID } from '@/data/treinos';
 import { melhor1RM, proximoAlvo, tonelagem, type Alvo } from '@/domain';
-import { recordeDe, ultimasSeriesDe, ultimaTonelagem } from '@/domain/historico';
+import { cargaDoPlanoVale, recordeDe, ultimaSessaoCom, ultimasSeriesDe, ultimaTonelagem } from '@/domain/historico';
 import {
   VALIDADE_DA_SESSAO_MS, fecharSessao, idDaSessao, itemDaSessao, novaSessao, registrarSerie,
-  sessaoParaRestaurar, sessaoVencida, type SessaoEmAndamento,
+  sessaoParaRestaurar, sessaoVencida, terminarAgora as terminarSessaoAgora, type SessaoEmAndamento,
 } from '@/domain/sessao';
+import { useAuth } from '@/estado/auth';
 import { useHistorico } from '@/estado/historico';
+import { usePlano } from '@/estado/perfil';
 
 /**
  * O estado da sessão em andamento.
@@ -28,7 +29,8 @@ import { useHistorico } from '@/estado/historico';
 export type Sessao = SessaoEmAndamento;
 export { itemDaSessao };
 
-const CHAVE = 'serie:sessao:v1';
+/** Por usuário: dois logins no mesmo aparelho não podem retomar o treino um do outro. */
+const chave = (usuarioId: string) => `serie:sessao:v2:${usuarioId}`;
 
 interface Contexto {
   sessao: Sessao | null;
@@ -42,6 +44,11 @@ interface Contexto {
   registrar: (reps: number, cargaKg: number, alvo: Alvo | undefined) => void;
   /** `CAR-9` — troca o exercício atual por outro (do mesmo padrão) só nesta sessão. */
   trocarExercicio: (exercicioId: string) => void;
+  /**
+   * RN-30 — termina antes do fim: com alguma série registrada o treino é SALVO como está (e vai
+   * para o resumo); sem nenhuma, é descartado. Devolve o que aconteceu, para a tela navegar.
+   */
+  terminarAgora: () => 'salvo' | 'descartado';
   abandonar: () => void;
 }
 
@@ -51,11 +58,15 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
   const [sessao, setSessao] = useState<Sessao | null>(null);
   const [carregada, setCarregada] = useState(false);
   const { registrarSessao, carregado: historicoCarregado } = useHistorico();
+  const { usuario } = useAuth();
+  const usuarioId = usuario?.id;
+  const { porId } = usePlano();
 
   // CAR-8: retoma a sessão salva (até 6 h). Corrompida ou velha é descartada lá dentro.
   useEffect(() => {
+    if (!usuarioId) return;
     let vivo = true;
-    AsyncStorage.getItem(CHAVE)
+    AsyncStorage.getItem(chave(usuarioId))
       .then((texto) => sessaoParaRestaurar(texto, Date.now()))
       .catch(() => null)
       .then((salva) => {
@@ -67,14 +78,16 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
     return () => {
       vivo = false;
     };
-  }, []);
+  }, [usuarioId]);
 
   // Grava depois que carregou: antes disso o `null` inicial apagaria a sessão do disco.
   useEffect(() => {
-    if (!carregada) return;
-    const gravacao = sessao ? AsyncStorage.setItem(CHAVE, JSON.stringify(sessao)) : AsyncStorage.removeItem(CHAVE);
+    if (!carregada || !usuarioId) return;
+    const gravacao = sessao
+      ? AsyncStorage.setItem(chave(usuarioId), JSON.stringify(sessao))
+      : AsyncStorage.removeItem(chave(usuarioId));
     gravacao.catch(() => {});
-  }, [sessao, carregada]);
+  }, [sessao, carregada, usuarioId]);
 
   // ⚠️ CAR-8 também com o app aberto. Conferir só ao ler o disco não basta: no Android o
   // processo vive dias em segundo plano (e a aba do navegador fica aberta), e o Hoje oferecia
@@ -104,8 +117,9 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
   }, [fechada, historicoCarregado, registrarSessao]);
 
   const comecar = useCallback((treinoId: string) => {
-    setSessao(novaSessao(treinoId, Date.now()));
-  }, []);
+    // RN-17: a sessão leva a versão do treino de agora; editar o plano depois não a afeta.
+    setSessao(novaSessao(treinoId, Date.now(), porId.get(treinoId)));
+  }, [porId]);
 
   const iniciarSerie = useCallback(() => {
     setSessao((s) => (s ? { ...s, inicioSerieMs: Date.now() } : s));
@@ -128,20 +142,28 @@ export function ProvedorDeSessao({ children }: { children: ReactNode }) {
       // descarte acima. Série em sessão vencida descarta a sessão — fechá-la gravaria no
       // histórico um treino com o início de ontem (~1.440 min).
       if (!s || sessaoVencida(s, agora)) return null;
-      const treino = TREINOS_POR_ID.get(s.treinoId);
+      const treino = s.treino ?? porId.get(s.treinoId);
       return treino ? registrarSerie(s, treino, reps, cargaKg, alvo, agora) : s;
     });
-  }, []);
+  }, [porId]);
 
   const trocarExercicio = useCallback((exercicioId: string) => {
     setSessao((s) => (s ? { ...s, trocas: { ...s.trocas, [s.indiceExercicio]: exercicioId } } : s));
   }, []);
 
+  const terminarAgora = useCallback((): 'salvo' | 'descartado' => {
+    const agora = Date.now();
+    // Decide pelo estado atual (não dentro do updater): a tela precisa da resposta já.
+    const resultado = sessao ? terminarSessaoAgora(sessao, agora) : null;
+    setSessao(resultado);
+    return resultado ? 'salvo' : 'descartado';
+  }, [sessao]);
+
   const abandonar = useCallback(() => setSessao(null), []);
 
   const valor = useMemo(
-    () => ({ sessao, carregada, comecar, iniciarSerie, encerrarSerie, registrar, trocarExercicio, abandonar }),
-    [sessao, carregada, comecar, iniciarSerie, encerrarSerie, registrar, trocarExercicio, abandonar],
+    () => ({ sessao, carregada, comecar, iniciarSerie, encerrarSerie, registrar, trocarExercicio, terminarAgora, abandonar }),
+    [sessao, carregada, comecar, iniciarSerie, encerrarSerie, registrar, trocarExercicio, terminarAgora, abandonar],
   );
   return <SessaoContexto.Provider value={valor}>{children}</SessaoContexto.Provider>;
 }
@@ -159,13 +181,15 @@ export function useSessao() {
 export function useTreinoEmAndamento() {
   const { sessao } = useSessao();
   const { sessoes } = useHistorico();
+  const { porId } = usePlano();
 
   return useMemo(() => {
     if (!sessao) return null;
-    const treino = TREINOS_POR_ID.get(sessao.treinoId);
+    const treino = sessao.treino ?? porId.get(sessao.treinoId);
     if (!treino) return null;
 
-    const terminou = sessao.indiceExercicio >= treino.itens.length;
+    // Terminou pelo fim do treino ou antes, pelo "terminar agora" (RN-30).
+    const terminou = sessao.fimMs != null || sessao.indiceExercicio >= treino.itens.length;
     const item = terminou ? undefined : itemDaSessao(treino, sessao, sessao.indiceExercicio);
     // As sessões ANTES desta — a que acabou de fechar entra no histórico e não pode se comparar consigo.
     const anteriores = sessoes.filter((s) => s.id !== idDaSessao(sessao));
@@ -179,6 +203,7 @@ export function useTreinoEmAndamento() {
         ultimaSessao: ultimaVez,
         faixa: item.faixa,
         cargaAtualKg: item.cargaKg,
+        cargaDoPlanoVale: cargaDoPlanoVale(item, ultimaSessaoCom(anteriores, item.exercicioId)?.fimMs),
         incrementoKg: exercicio?.incrementoKg ?? 2.5,
         series: item.series,
       });
@@ -214,5 +239,5 @@ export function useTreinoEmAndamento() {
       recordeAnterior: (exercicioId: string) => recordeDe(anteriores, exercicioId),
       melhor1RMDaSessao: melhor1RM(sessao.registradas),
     };
-  }, [sessao, sessoes]);
+  }, [sessao, sessoes, porId]);
 }
