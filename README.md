@@ -44,6 +44,13 @@ O protótipo do CP5 virou app de verdade, com conta, banco e APK:
 | **Corrigir o histórico** | errou um número? corrige a série, tira a série ou apaga o treino; recorde, progresso e heatmap se recalculam na hora | Histórico |
 | **Offline-first com nuvem** | tudo vale primeiro no aparelho e sobe para o Postgres quando houver rede. O Perfil diz se ainda há treino esperando conexão | — |
 
+![A Série no Android: Início com o heatmap, treino ativo, execução da série e descanso](docs/evidencias/cp6-android-treino.png)
+![Editar e acompanhar no Android: Meus treinos, Montar treino, um treino do histórico e Progresso](docs/evidencias/cp6-android-edicao.png)
+
+*O APK 1.0.1 rodando no emulador do Android Studio (Pixel 9, Android 16), logado numa conta de
+verdade: os dados vêm do Supabase. Mais capturas e o que foi medido em
+[`docs/evidencias/`](docs/evidencias/README.md#cp6--o-app-final-no-android).*
+
 As regras de produto que nasceram com isso estão numeradas em
 [`docs/regras-do-app.md`](docs/regras-do-app.md) (`RN-01` a `RN-54`), ao lado das regras de treino
 (`CAR-*`, [`docs/regras.md`](docs/regras.md)). Para quem vai usar o app, o passo a passo está no
@@ -53,17 +60,19 @@ As regras de produto que nasceram com isso estão numeradas em
 
 <img src="docs/evidencias/apk-qr.png" width="150" align="right" alt="QR code para baixar o APK da Série">
 
-**[⬇ Baixar a Série 1.0.0 para Android](https://github.com/jota0802/serie/releases/download/v1.0.0/serie-1.0.0.apk)**
-(APK de 105 MB) — ou aponte a câmera do celular para o QR code.
+**[⬇ Baixar a Série para Android](https://github.com/jota0802/serie/releases/latest/download/serie.apk)**
+(versão 1.0.1, APK de 105 MB) — ou aponte a câmera do celular para o QR code.
 
 | Onde | Validade |
 |---|---|
-| [Release v1.0.0 no GitHub](https://github.com/jota0802/serie/releases/tag/v1.0.0), com o `.apk` anexado | permanente |
-| [O mesmo APK, direto do EAS Build](https://expo.dev/artifacts/eas/2t-fON2tgDbuAAwcBJVHQT5ZnadtrrxXJfAhe2Iuwv8.apk) | até 20/10/2026 (a Expo apaga o arquivo depois) |
+| [Última Release no GitHub](https://github.com/jota0802/serie/releases/latest), com o `.apk` anexado | permanente: o link de cima baixa sempre a versão mais nova |
+| [O 1.0.1 direto do EAS Build](https://expo.dev/artifacts/eas/LlHAsZjCifZtE1bj8mNRVrxTz8QCnBt990q31XgsVFw.apk) | até 20/10/2026 (a Expo apaga o arquivo depois) |
 
 1. Baixe o `.apk` no celular Android e abra o arquivo. O Android pede para permitir "instalar
    apps desconhecidos" pelo navegador: permita.
 2. Abra a **Série.**, toque em **Montar meu treino** e crie a conta.
+
+Já tem a 1.0.0? O APK novo instala por cima, como atualização, e o login continua.
 
 <br clear="right">
 
@@ -418,7 +427,7 @@ acesso ao Figma.
 |---|---|---|
 | **CP4** — Idealização | conceito, marca, documentação inicial, setup | ✅ repositório, README, escopo, pitch, marca e projeto Expo prontos |
 | **CP5** — Protótipo | protótipo funcional com dados mockados | ✅ 15 telas navegáveis com barra de abas, dados mockados persistidos no aparelho (AsyncStorage), 113 testes Jest, telas e fluxos documentados, prints do app rodando no navegador |
-| **CP6** — Entrega final | app final e APK instalável | ✅ conta e dados no Supabase (Auth + Postgres com RLS) com sincronização offline-first, as 21 telas em código (montagem do plano 06–09, Montar treino 18–19), Início com heatmap do ano, edição do plano e correção do histórico, 248 testes Jest, manual de uso e [APK via EAS Build](#instalar-o-apk) |
+| **CP6** — Entrega final | app final e APK instalável | ✅ conta e dados no Supabase (Auth + Postgres com RLS) com sincronização offline-first, as 21 telas em código (montagem do plano 06–09, Montar treino 18–19), Início com heatmap do ano, edição do plano e correção do histórico, 248 testes Jest, manual de uso e [APK 1.0.1 via EAS Build](#instalar-o-apk), testado no emulador do Android Studio |
 
 ## Licença
 

@@ -235,6 +235,6 @@ terminar o treino antes.
 |---|---|---|
 | Perfil | `preview` no [`eas.json`](../eas.json): `buildType: "apk"`, distribuição interna | o enunciado pede **APK instalável**; o `.aab` do perfil `production` só serve para a Play Store |
 | Assinatura | keystore gerada e guardada pelo EAS | ninguém do grupo guarda arquivo de chave, e a assinatura é sempre a mesma: é ela que deixa o Android aceitar um APK novo como atualização do instalado |
-| Versão | `appVersionSource: "remote"` | o `versionCode` mora no EAS, e o perfil `production` o incrementa sozinho: dois integrantes gerando build não colidem no número |
+| Versão | `appVersionSource: "remote"` + `autoIncrement` | o `versionCode` mora no EAS e sobe sozinho a cada build (`preview` e `production`): o APK novo instala por cima do antigo como atualização, sem perder o login, e dois integrantes gerando build não colidem no número |
 | `eas-cli` | pelo `npx`, **fora** das dependências | o EAS instala as dependências com `npm ci` no **npm 10** (Node 22). Com o `eas-cli` nas devDependencies, o lock gerado no npm 11 não servia para o npm 10 (um peer opcional dele pedia o TypeScript 5) e o primeiro build quebrou na instalação. Conferido com o mesmo `npm ci` do npm 10.9.8 antes de mandar de novo. A Expo também recomenda não pôr o CLI no projeto |
 | Variáveis | o `.env` vai junto no build | as duas `EXPO_PUBLIC_*` são públicas por natureza (a URL e a chave publicável); nada secreto entra no APK |

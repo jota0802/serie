@@ -67,14 +67,39 @@ O que as passadas mediram, além dos prints:
 
 O APK sai do EAS Build e o link para instalar está no README, em
 [Instalar o APK](../../README.md#instalar-o-apk). "APK instalável e funcional" vale **20%** da
-nota do CP6, e quem prova isso é um print num aparelho de verdade:
+nota do CP6. As capturas abaixo são do APK instalado no **emulador do Android Studio** (Pixel 9,
+Android 16), logado numa conta de verdade, com os dados vindos do Supabase. As telas de entrada são
+da 1.0.0 (não mudaram); o resto, da 1.0.1.
 
-| Evidência | Como |
+| Arquivo | O que mostra |
 |---|---|
-| **APK instalado num Android** | instale pelo link do README e tire dois prints: a Série. na lista de apps e o app aberto no Início. Guarde aqui como `cp6-apk-instalado.png` e `cp6-inicio-android.png` |
-| **vídeo curto do app final** | roteiro abaixo; guarde como `cp6-video.mp4` se couber nos 100 MB do GitHub, ou suba no Drive e ponha o link no README |
-| **`npm test` verde** | 248 testes em 16 suítes; a saída está no README, em [Ambiente de teste](../../README.md#ambiente-de-teste) |
-| **QR code do APK** | [`apk-qr.png`](apk-qr.png) aponta para o APK da Release v1.0.0: na apresentação, quem tiver Android instala na hora |
+| [`cp6-apk-instalado.png`](cp6-apk-instalado.png) | as informações do app no Android: Série, versão 1.0.1, nenhuma permissão pedida |
+| [`cp6-android-entrada.png`](cp6-android-entrada.png) | a Abertura, o Entrar e o Criar conta |
+| [`cp6-android-treino.png`](cp6-android-treino.png) | o Início com o heatmap do ano, o treino ativo, a execução da série e o descanso |
+| [`cp6-android-edicao.png`](cp6-android-edicao.png) | Meus treinos, Montar treino, um treino do histórico (corrigível) e o Progresso |
+| [`apk-qr.png`](apk-qr.png) | o QR code do APK mais recente (Release `latest`): na apresentação, quem tiver Android instala na hora |
+
+O que o passeio no emulador mediu, além dos prints:
+
+- a 1.0.1 instalou **por cima** da 1.0.0 (versionCode 2) e o login continuou;
+- abrir o app a frio leva **cerca de 1 s** (`am start -W`: de 0,96 a 1,46 s);
+- **zero erro** no log do app (`logcat`), do login ao descanso;
+- o treino começado para os prints foi **descartado** no fim: nada entrou no histórico.
+
+O passeio também achou três ajustes, que viraram a 1.0.1: o rótulo "out" do heatmap cortado em
+"ou" (o Android corta o que passa da grade), o total de kg ainda como destaque no treino do
+histórico, e um aviso de "deprecated" da supabase-js no log.
+
+Para reforçar, se o grupo quiser: um print num celular Android de verdade e o **vídeo curto**
+(roteiro abaixo; guarde como `cp6-video.mp4` se couber nos 100 MB do GitHub, ou suba no Drive e
+ponha o link no README). O `npm test` verde (248 testes em 16 suítes) está no README, em
+[Ambiente de teste](../../README.md#ambiente-de-teste).
+
+## Como reproduzir no Android Studio
+
+1. Abra o Android Studio → **Device Manager** e ligue um emulador (aqui: Pixel 9, Android 16).
+2. Arraste o `.apk` para a janela do emulador (ou `adb install serie.apk`).
+3. Para desenvolver com o código, `npm start` e a tecla `a` abrem o app no mesmo emulador.
 
 ## Como reproduzir no navegador
 
