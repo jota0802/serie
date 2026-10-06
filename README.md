@@ -4,9 +4,9 @@
 
 **Caderno de treino que sabe o que você fez da última vez e já chega com o campo preenchido.**
 
-![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-0E0E0E?style=flat-square&labelColor=0E0E0E&color=F8F8F8) ![React Native 0.86](https://img.shields.io/badge/React%20Native-0.86-0E0E0E?style=flat-square&labelColor=0E0E0E&color=F8F8F8) ![TypeScript 6.0](https://img.shields.io/badge/TypeScript-6.0-0E0E0E?style=flat-square&labelColor=0E0E0E&color=F8F8F8) ![Jest — 113 testes verdes](https://img.shields.io/badge/Jest-113%20testes%20verdes-0E0E0E?style=flat-square&labelColor=0E0E0E&color=FFE657)
+![Expo SDK 57](https://img.shields.io/badge/Expo-SDK%2057-0E0E0E?style=flat-square&labelColor=0E0E0E&color=F8F8F8) ![React Native 0.86](https://img.shields.io/badge/React%20Native-0.86-0E0E0E?style=flat-square&labelColor=0E0E0E&color=F8F8F8) ![TypeScript 6.0](https://img.shields.io/badge/TypeScript-6.0-0E0E0E?style=flat-square&labelColor=0E0E0E&color=F8F8F8) ![Supabase](https://img.shields.io/badge/Supabase-Auth%20%2B%20Postgres-0E0E0E?style=flat-square&labelColor=0E0E0E&color=F8F8F8) ![Jest — 248 testes verdes](https://img.shields.io/badge/Jest-248%20testes%20verdes-0E0E0E?style=flat-square&labelColor=0E0E0E&color=FFE657)
 
-[O problema](#o-problema) · [O app rodando](#o-app-rodando) · [Telas e fluxos](#telas-e-fluxos) · [As 21 telas](#as-21-telas) · [Integrantes](#integrantes-e-papéis) · [Como rodar](#como-rodar) · [Testes](#ambiente-de-teste) · [Stack](#stack) · [Entregas](#estado-das-entregas)
+[O problema](#o-problema) · [O app final](#o-app-final--cp6) · [Instalar o APK](#instalar-o-apk) · [Manual de uso](docs/manual-de-uso.md) · [Telas e fluxos](#telas-e-fluxos) · [As 21 telas](#as-21-telas) · [Integrantes](#integrantes-e-papéis) · [Como rodar](#como-rodar) · [Testes](#ambiente-de-teste) · [Stack](#stack) · [Entregas](#estado-das-entregas)
 
 </div>
 
@@ -30,7 +30,47 @@ com um toque ou corrige o número. É a diferença entre *registrar* e *ser guia
 
 📄 Escopo completo em [`docs/escopo.md`](docs/escopo.md) · 💰 Modelo de negócio em [`docs/pitch.md`](docs/pitch.md)
 
-## O app rodando
+## O app final — CP6
+
+O protótipo do CP5 virou app de verdade, com conta, banco e APK:
+
+| | O que o app faz | Telas |
+|---|---|---|
+| **Conta** | e-mail e senha no Supabase Auth. O plano e o histórico são da conta, não do aparelho: trocar de celular não perde nada | 01–05 e Nova senha |
+| **Montagem do plano** | três perguntas (peso, dias por semana, objetivo) geram o plano A/B ou A/B/C, com a carga de partida de cada exercício calculada pelo peso | 06–09 |
+| **Início** | a letra do dia, o que mudou desde a última vez e o **heatmap do ano**: um quadrado por dia, mais claro quanto mais séries, **ouro no dia de recorde** | 10 |
+| **O treino** | o caminho crítico do CP5, agora com transições entre as telas, terminar antes salvando o que foi feito e um resumo que mostra **o que evoluiu** e o alvo da próxima vez | 11–16 |
+| **Editar o plano** | dias de treino, ordem das letras, exercícios (adicionar, **trocar**, mover, tirar) e séries, faixa, carga e descanso de cada um | 17–19 |
+| **Corrigir o histórico** | errou um número? corrige a série, tira a série ou apaga o treino; recorde, progresso e heatmap se recalculam na hora | Histórico |
+| **Offline-first com nuvem** | tudo vale primeiro no aparelho e sobe para o Postgres quando houver rede. O Perfil diz se ainda há treino esperando conexão | — |
+
+As regras de produto que nasceram com isso estão numeradas em
+[`docs/regras-do-app.md`](docs/regras-do-app.md) (`RN-01` a `RN-54`), ao lado das regras de treino
+(`CAR-*`, [`docs/regras.md`](docs/regras.md)). Para quem vai usar o app, o passo a passo está no
+**[manual de uso](docs/manual-de-uso.md)**.
+
+### Instalar o APK
+
+<img src="docs/evidencias/apk-qr.png" width="150" align="right" alt="QR code para baixar o APK da Série">
+
+**[⬇ Baixar a Série 1.0.0 para Android](https://github.com/jota0802/serie/releases/download/v1.0.0/serie-1.0.0.apk)**
+(APK de 105 MB) — ou aponte a câmera do celular para o QR code.
+
+| Onde | Validade |
+|---|---|
+| [Release v1.0.0 no GitHub](https://github.com/jota0802/serie/releases/tag/v1.0.0), com o `.apk` anexado | permanente |
+| [O mesmo APK, direto do EAS Build](https://expo.dev/artifacts/eas/2t-fON2tgDbuAAwcBJVHQT5ZnadtrrxXJfAhe2Iuwv8.apk) | até 20/10/2026 (a Expo apaga o arquivo depois) |
+
+1. Baixe o `.apk` no celular Android e abra o arquivo. O Android pede para permitir "instalar
+   apps desconhecidos" pelo navegador: permita.
+2. Abra a **Série.**, toque em **Montar meu treino** e crie a conta.
+
+<br clear="right">
+
+O APK é gerado pelo EAS Build (perfil `preview` do [`eas.json`](eas.json)); para gerar outro, veja
+[Como rodar](#como-rodar).
+
+## O protótipo do CP5
 
 **CP5 — protótipo funcional com dados mockados.** Capturas do app de verdade rodando em
 `npm run web` (Expo + React Native Web) num viewport de celular, percorrido tela a tela: um treino A
@@ -73,17 +113,20 @@ O mapa completo — rota de cada tela, o fluxo de navegação em diagrama e de o
 está em **[`docs/telas-e-fluxos.md`](docs/telas-e-fluxos.md)**. O resumo:
 
 ```
-01 Abertura ─┬─ Já tenho conta ──▶ 02 Entrar ─┬─ 04 Recuperar senha ── 05 Link enviado
-             │                                └─ 03 Criar conta
-             └─ Montar meu treino ──────────────┐   (Entrar e Criar conta também levam ao Hoje)
-      ┌─────────────────────────────────────────┴──── barra de abas: Hoje · Progresso · Treinos · Perfil
-      ▼
-   10 Hoje ── Começar treino ──▶ 11 Treino ativo ──▶ 12 Execução ──▶ 13 Descanso ──┐
-                                   │   ▲                                            │
-                                   │   └──────────── registra e volta ─────────────┘
-                                   ├── Trocar exercício ──▶ 16 ──▶ volta à 11
-                                   ├── Histórico ──▶ 15 Exercício
-                                   └── última série ──▶ 14 Resumo ──▶ 10 Hoje (próxima letra)
+01 Abertura ─┬─ Montar meu treino ──▶ 03 Criar conta ──▶ 06 Medidas ▶ 07 Dias ▶ 08 Objetivo ▶ 09 Seu plano ─┐
+             └─ Já tenho conta ─────▶ 02 Entrar ─┬─ 04 Recuperar senha ── 05 Link enviado                     │
+                                                 └─ conta com plano ──────────────────────────────────────────┤
+      ┌───────────────────────────────────────────────────────────────────────────────────────────────────────┘
+      ▼            barra de abas: Início · Progresso · Treinos · Perfil
+   10 Início ── Começar treino ──▶ 11 Treino ativo ──▶ 12 Execução ──▶ 13 Descanso ──┐
+      ▲                               │   ▲                                           │
+      │                               │   └──────────── registra e volta ────────────┘
+      │                               ├── Trocar exercício ──▶ 16 ──▶ volta à 11
+      │                               ├── Histórico ──▶ 15 Exercício
+      └─────── Fechar ── 14 Resumo ◀──┴── última série, ou X · Terminar e salvar
+
+   17 Meus treinos ──▶ 18 Montar treino ──▶ 19 Escolher exercício (adicionar ou trocar)
+   20 Progresso ──▶ Histórico ──▶ treino do histórico (corrigir uma série, apagar o treino)
 ```
 
 ## As 21 telas
@@ -108,9 +151,9 @@ invente um treino.
 
 [![Telas 10 a 14](docs/telas/grupo-2-treino.png)](docs/telas/grupo-2-treino.png)
 
-O **caminho crítico** — as cinco estão em código, e são as capturas da seção anterior. Comparar as
-duas fileiras é o teste de fidelidade que o CP6 cobra ("fidelidade ao conceito e identidade visual
-definidos no CP4").
+O **caminho crítico** — as cinco estão em código, e são as capturas do [protótipo do
+CP5](#o-protótipo-do-cp5). Comparar as duas fileiras é o teste de fidelidade que o CP6 cobra
+("fidelidade ao conceito e identidade visual definidos no CP4").
 
 ### Apoio — telas 15 a 21
 
@@ -120,8 +163,10 @@ A **15 · Exercício** funde histórico e prescrição de propósito: são duas 
 e a progressão é o que justifica a prescrição. A **16 · Trocar exercício** é a `CAR-9` — aparelho
 ocupado é o problema nº 1 da academia, e o histórico segue o *padrão de movimento*, não o aparelho.
 
-**Em código no CP5:** 15, 16, 17, 20 e 21. A 18 (Montar treino), a 19 (Escolher exercício) e a
-montagem do plano (06–09) ficam para o CP6 — no protótipo, o plano A/B/C vem dos dados mockados.
+**No CP6, as 21 estão em código**, mais duas que o Figma não tinha: a **Nova senha** (aberta pelo
+link do e-mail de recuperação) e o **Histórico**, onde se corrige o que foi registrado. No CP5
+eram 15; a 18 (Montar treino), a 19 (Escolher exercício) e a montagem do plano (06–09) entraram
+com o banco.
 
 <details>
 <summary>As 21 telas, uma a uma (arquivos individuais)</summary>
@@ -170,37 +215,91 @@ Depois de `npm start`, leia o QR Code com o Expo Go, ou pressione:
 | `i` | abre no simulador do iOS (só macOS) |
 | `w` | abre no navegador |
 
+### O banco (Supabase)
+
+O [`.env`](.env) do repositório já aponta para o Supabase do projeto, então `npm start` funciona
+sem configurar nada. A chave dele é a **publicável**: ela vai dentro do APK de qualquer jeito, e
+quem protege os dados é o RLS (cada conta só lê e grava as próprias linhas).
+
+Para subir o app num projeto Supabase seu:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <ref do seu projeto>
+npx supabase db push
+npx supabase config push
+```
+
+O `db push` cria as tabelas e as políticas de [`supabase/migrations/`](supabase/migrations/); o
+`config push` aplica o Auth de [`supabase/config.toml`](supabase/config.toml) (senha mínima de 8,
+confirmação de e-mail desligada, links de "esqueci a senha"). Depois, troque a URL e a chave
+publicável no `.env`.
+
+### O APK (EAS Build)
+
+```bash
+npx eas-cli login
+npx eas-cli build -p android --profile preview
+```
+
+O perfil `preview` gera um **APK** para instalar direto no celular; o `production` gera o `.aab`
+da Play Store. O `eas-cli` roda pelo `npx` e **não** fica nas dependências do projeto (ver
+[`docs/decisoes-tecnicas.md`](docs/decisoes-tecnicas.md) §16).
+
 ## Ambiente de teste
 
 As regras do app são funções puras, sem React e sem tela — dá para testá-las sem montar componente
-nenhum. São **113 testes em 5 suítes**, em [`src/domain/__tests__/`](src/domain/__tests__/):
+nenhum. São **248 testes em 16 suítes**: as regras de treino e de produto em
+[`src/domain/__tests__/`](src/domain/__tests__/), a sincronização e o login em
+[`src/lib/__tests__/`](src/lib/__tests__/) e as telas mais tocadas, montadas de verdade com
+`react-test-renderer`, em [`src/components/__tests__/`](src/components/__tests__/):
 
 ```bash
 npm test
 ```
 
 ```
-PASS src/domain/__tests__/troca.test.ts
+PASS src/components/__tests__/telas-do-historico.test.tsx
+PASS src/components/__tests__/inicio.test.tsx
+PASS src/components/__tests__/telas-de-editar-o-plano.test.tsx
+PASS src/domain/__tests__/edicao.test.ts
+PASS src/components/__tests__/formato-do-historico.test.ts
+PASS src/domain/__tests__/calendario.test.ts
+PASS src/domain/__tests__/resumo-detalhe.test.ts
+PASS src/domain/__tests__/progressao-carga.test.ts
+PASS src/domain/__tests__/plano.test.ts
+PASS src/lib/__tests__/sincronizacao.test.ts
+PASS src/lib/__tests__/auth.test.ts
 PASS src/domain/__tests__/historico.test.ts
+PASS src/domain/__tests__/troca.test.ts
 PASS src/domain/__tests__/progresso.test.ts
 PASS src/domain/__tests__/sessao.test.ts
 PASS src/domain/__tests__/regras.test.ts
-Test Suites: 5 passed, 5 total
-Tests:       113 passed, 113 total
+Test Suites: 16 passed, 16 total
+Tests:       248 passed, 248 total
 Snapshots:   0 total
-Time:        0.972 s, estimated 1 s
+Time:        2.061 s
 Ran all test suites.
 ```
-
-![npm test verde](docs/evidencias/cp5-testes.png)
 
 | Suíte | O que prova |
 |---|---|
 | [`regras.test.ts`](src/domain/__tests__/regras.test.ts) | dupla progressão, deload, 1RM estimado, volume semanal |
-| [`historico.test.ts`](src/domain/__tests__/historico.test.ts) | os **dados mockados são coerentes** entre si, e recorde, tonelagem anterior e a próxima letra saem das séries |
-| [`sessao.test.ts`](src/domain/__tests__/sessao.test.ts) | o caminho crítico de ponta a ponta (começar → registrar as 16 séries → o Hoje propõe a próxima letra), a sessão retomável por 6 h e o texto do resumo |
+| [`progressao-carga.test.ts`](src/domain/__tests__/progressao-carga.test.ts) | a `CAR-1` parte da carga da **última vez**, não da do plano; e a carga mudada de propósito no plano (`RN-19`) |
+| [`historico.test.ts`](src/domain/__tests__/historico.test.ts) | a massa de teste é coerente, e recorde, "a última vez" e a próxima letra saem das séries |
+| [`sessao.test.ts`](src/domain/__tests__/sessao.test.ts) | o caminho crítico de ponta a ponta (começar → registrar as 16 séries → a próxima letra), a sessão retomável por 6 h |
 | [`troca.test.ts`](src/domain/__tests__/troca.test.ts) | a `CAR-9`: alternativas por padrão e grupo, e a carga estimada por equipamento |
 | [`progresso.test.ts`](src/domain/__tests__/progresso.test.ts) | a tela de Progresso (`CAR-4`, frequência semanal, recordes) e o CSV exportado |
+| [`plano.test.ts`](src/domain/__tests__/plano.test.ts) | a montagem (06–09): as três respostas geram o plano, e todo exercício com carga tem carga de partida (`RN-18`) |
+| [`edicao.test.ts`](src/domain/__tests__/edicao.test.ts) | editar o plano (`RN-10` a `RN-19`, a troca `RN-12a`), corrigir o histórico (`RN-40` a `RN-43`) e terminar antes (`RN-30`) |
+| [`calendario.test.ts`](src/domain/__tests__/calendario.test.ts) | o heatmap do Início: 53 semanas, intensidade por séries, o ouro dos recordes, a sequência de semanas (`RN-50` a `RN-53`) |
+| [`resumo-detalhe.test.ts`](src/domain/__tests__/resumo-detalhe.test.ts) | o resumo exercício por exercício, os recordes do dia, o próximo dia de treino e o destaque "você evoluiu" (`CAR-7`) |
+| [`sincronizacao.test.ts`](src/lib/__tests__/sincronizacao.test.ts) | ida e volta entre o aparelho e as tabelas do Supabase, e a mescla do aparelho com a nuvem |
+| [`auth.test.ts`](src/lib/__tests__/auth.test.ts) | as mensagens de erro do login em português e o link de redefinir senha |
+| [`inicio.test.tsx`](src/components/__tests__/inicio.test.tsx) | o Início montado: o que fazer hoje, a constância e o heatmap |
+| [`telas-de-editar-o-plano.test.tsx`](src/components/__tests__/telas-de-editar-o-plano.test.tsx) | 17 Meus treinos, 18 Montar treino e 19 Escolher exercício montados |
+| [`telas-do-historico.test.tsx`](src/components/__tests__/telas-do-historico.test.tsx) | o Histórico e o treino do histórico, e o painel de encerrar o treino |
+| [`formato-do-historico.test.ts`](src/components/__tests__/formato-do-historico.test.ts) | datas sem `Intl` no fuso do aparelho, a lista por mês e o selo de recorde |
 
 O caso que mais importa continua sendo **"série faltando não conta como faixa fechada"**: sem ele a
 carga sobe por causa de um treino incompleto, e o usuário chega na academia com um número que não
@@ -212,40 +311,50 @@ conquistou.
 serie/
 ├── src/
 │   ├── app/            # rotas — Expo Router (file-based routing)
+│   │   ├── _layout.tsx     # as três áreas protegidas: sem conta, conta sem plano, conta com plano
 │   │   ├── index.tsx       # 01 · Abertura
 │   │   ├── entrar.tsx      # 02 · Entrar
 │   │   ├── criar-conta.tsx     # 03 · Criar conta
 │   │   ├── recuperar-senha.tsx # 04 · Recuperar senha
 │   │   ├── link-enviado.tsx    # 05 · Link enviado
-│   │   ├── hoje.tsx        # 10 · Hoje — a porta do caminho crítico
+│   │   ├── redefinir-senha.tsx # Nova senha, aberta pelo link do e-mail
+│   │   ├── montagem/       # 06 medidas · 07 dias · 08 objetivo · 09 seu plano
+│   │   ├── hoje.tsx        # 10 · Início — o dia de hoje e o heatmap do ano
 │   │   ├── treino/         # 11 ativo · 12 execução · 13 descanso · 14 resumo · 16 trocar
 │   │   ├── exercicio/[id].tsx  # 15 · Exercício
 │   │   ├── treinos.tsx     # 17 · Meus treinos
+│   │   ├── montar/         # 18 montar treino · 19 escolher exercício
+│   │   ├── historico/      # a lista de treinos e o treino, corrigível
 │   │   ├── progresso.tsx   # 20 · Progresso
 │   │   └── perfil.tsx      # 21 · Perfil
-│   ├── components/     # os componentes do design system
-│   ├── domain/         # as regras CAR-* como funções puras. O "cérebro" do app
-│   │   └── __tests__/  # 5 suítes Jest — 113 testes
-│   ├── data/           # os mocks: 45 exercícios, treinos A/B/C, histórico de fábrica
-│   ├── estado/         # Context API: histórico persistido (AsyncStorage) e a sessão em andamento
-│   ├── hooks/          # cronômetro, guarda da sessão, treino com a troca aplicada
-│   ├── theme/          # tokens (cor, tipografia, espaço, raio) — espelha o Figma
-│   └── lib/            # utilitários (formatação em pt-BR, exportar CSV)
+│   ├── components/     # os componentes do design system (e os testes das telas)
+│   ├── domain/         # as regras CAR-* e RN-* como funções puras. O "cérebro" do app
+│   ├── data/           # o catálogo de 45 exercícios; e a massa de teste do CP5
+│   ├── estado/         # Context API: conta, perfil e plano, histórico, sessão em andamento
+│   ├── hooks/          # cronômetro, guarda da sessão, troca aplicada, tentar de novo ao reconectar
+│   ├── theme/          # tokens (cor, tipografia, espaço, raio, movimento) — espelha o Figma
+│   └── lib/            # cliente Supabase, sincronização, formatação em pt-BR, exportar CSV
+├── supabase/
+│   ├── migrations/     # o esquema do banco e as políticas de RLS, em SQL versionado
+│   └── config.toml     # o Auth: senha mínima, confirmação de e-mail, URLs do link
 ├── docs/
-│   ├── telas-e-fluxos.md    # CP5: rota de cada tela, o fluxo de navegação, a origem dos dados
+│   ├── manual-de-uso.md     # o app passo a passo, para quem vai usar
+│   ├── telas-e-fluxos.md    # a rota de cada tela, o fluxo de navegação, a origem dos dados
+│   ├── regras.md            # as regras CAR-* — a lógica de treino
+│   ├── regras-do-app.md     # as regras RN-* — conta, plano, rodízio, sessão, histórico, Início
+│   ├── decisoes-tecnicas.md # stack, arquitetura e o porquê de cada escolha
 │   ├── escopo.md            # problema, público-alvo, proposta de valor
 │   ├── pitch.md             # modelo de negócio e diferencial competitivo
 │   ├── marca.md             # nome, logo, paleta, tipografia
-│   ├── regras.md            # as 11 regras CAR-* — a lógica do produto
-│   ├── decisoes-tecnicas.md # stack e o porquê de cada escolha
 │   └── evidencias/          # prints do app rodando
+├── eas.json            # os perfis do EAS Build (preview = APK)
 └── assets/             # marca, ícone, splash
 ```
 
 **Por que `domain/` é uma pasta separada:** as regras (dupla progressão, 1RM estimado, volume
-semanal) não sabem que existe tela. Isso as torna testáveis com Jest sem montar componente — são as
-113 testes de `npm test`, e é o que paga o item *"ambiente de teste configurado"* do CP5.
-Detalhes em [`docs/decisoes-tecnicas.md`](docs/decisoes-tecnicas.md).
+semanal, o heatmap, editar o plano) não sabem que existe tela. Isso as torna testáveis com Jest sem
+montar componente — é a maior parte dos 248 testes de `npm test`. Detalhes em
+[`docs/decisoes-tecnicas.md`](docs/decisoes-tecnicas.md).
 
 ## A marca
 
@@ -280,13 +389,16 @@ nos números e títulos, **Manrope** no texto. Tudo em [`docs/marca.md`](docs/ma
 | Linguagem | **TypeScript** | o modelo de domínio (Série, Sessão, Treino) é o coração do app; tipo errado aqui vira bug de carga |
 | Testes | **Jest** (preset `jest-expo`) | as regras são funções puras: dá para testá-las sem montar tela |
 | Dados (CP5) | **JSON local + AsyncStorage** | o enunciado do CP5 pede dados mockados, sem backend |
-| Dados (CP6) | **Supabase** *(a confirmar)* | só para backup e login. O app é **offline-first**: academia é subsolo |
+| Dados (CP6) | **Supabase** (Auth + Postgres com RLS) + **AsyncStorage** | a conta e a cópia na nuvem. O app continua **offline-first**: academia é subsolo, então tudo vale primeiro no aparelho |
+| Build | **EAS Build** | gera o APK na nuvem da Expo, sem depender da máquina de ninguém |
 
 ## Documentação
 
 | Documento | O que tem dentro |
 |---|---|
-| [`docs/telas-e-fluxos.md`](docs/telas-e-fluxos.md) | **CP5:** as telas em código, a rota de cada uma, o fluxo de navegação e a origem dos dados |
+| [`docs/manual-de-uso.md`](docs/manual-de-uso.md) | **o app passo a passo**: instalar, criar a conta, treinar, editar o plano, corrigir o histórico, usar sem internet |
+| [`docs/telas-e-fluxos.md`](docs/telas-e-fluxos.md) | as telas em código, a rota de cada uma, quem pode abrir, o fluxo de navegação e a origem dos dados |
+| [`docs/regras-do-app.md`](docs/regras-do-app.md) | as regras `RN-*` do produto: conta e dados, plano, rodízio, sessão, histórico, Início e heatmap |
 | [`docs/escopo.md`](docs/escopo.md) | problema, público-alvo, proposta de valor, o que está **fora** do MVP |
 | [`docs/pitch.md`](docs/pitch.md) | modelo de negócio (freemium) e diferencial competitivo |
 | [`docs/marca.md`](docs/marca.md) | nome, marca gráfica, paleta de 14 neutros + 2 acentos e o vermelho de ação destrutiva, tipografia |
@@ -306,7 +418,7 @@ acesso ao Figma.
 |---|---|---|
 | **CP4** — Idealização | conceito, marca, documentação inicial, setup | ✅ repositório, README, escopo, pitch, marca e projeto Expo prontos |
 | **CP5** — Protótipo | protótipo funcional com dados mockados | ✅ 15 telas navegáveis com barra de abas, dados mockados persistidos no aparelho (AsyncStorage), 113 testes Jest, telas e fluxos documentados, prints do app rodando no navegador |
-| **CP6** — Entrega final | app final e APK instalável | ⬜ não iniciado |
+| **CP6** — Entrega final | app final e APK instalável | ✅ conta e dados no Supabase (Auth + Postgres com RLS) com sincronização offline-first, as 21 telas em código (montagem do plano 06–09, Montar treino 18–19), Início com heatmap do ano, edição do plano e correção do histórico, 248 testes Jest, manual de uso e [APK via EAS Build](#instalar-o-apk) |
 
 ## Licença
 

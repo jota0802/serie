@@ -2,7 +2,7 @@
   "expo": {
     "name": "Série",
     "slug": "serie",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "serie",
     "icon": "./assets/images/icon.png",
@@ -22,7 +22,7 @@
       "supportsTablet": false
     },
     "web": {
-      "output": "static",
+      "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
@@ -39,6 +39,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "0b88b825-0ae1-4d6f-a9ba-bf4720781b75"
+      }
+    },
+    "owner": "jotinha02"
   }
 }

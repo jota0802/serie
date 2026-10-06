@@ -13,7 +13,7 @@
 | Navegação | **Expo Router** | React Navigation na mão | rotas por arquivo; o deep link sai de graça. É o padrão do template oficial do Expo |
 | Linguagem | **TypeScript** | JavaScript | o modelo de domínio (Série, Sessão, Treino) é o coração do app. Tipo errado aqui vira bug de carga, que é o pior bug possível neste produto |
 | Dados no CP5 | **JSON local + AsyncStorage** | `json-server` | o enunciado aceita os dois; o local casa com o requisito de offline-first e não precisa de um segundo processo rodando na apresentação |
-| Dados no CP6 | **Supabase** *(a confirmar)* | Firebase | Postgres de verdade, e o plano grátis cobre o projeto inteiro. Só entra para login e backup — o app funciona sem ele |
+| Dados no CP6 | **Supabase** (Auth + Postgres com RLS) | Firebase | Postgres de verdade, SQL versionado em migração, e o plano grátis cobre o projeto inteiro. É a conta e a cópia na nuvem — o treino continua funcionando sem rede (§12) |
 | Build do APK | **EAS Build** | Android Studio local | é o caminho que o próprio enunciado cita, e não depende da máquina de ninguém |
 
 ## 2. Offline-first não é otimização, é requisito
@@ -37,8 +37,8 @@ As regras `CAR-*` são **funções puras**: entram dados, saem dados. Sem `useSt
 sem navegação. Isso dá três coisas de graça:
 
 - **Testáveis com Jest sem montar tela** — que é exatamente o "ambiente de teste configurado" que o
-  CP5 cobra, e o tipo de teste que não quebra quando o layout muda. São **113 testes verdes** em
-  cinco suítes de [`src/domain/__tests__/`](../src/domain/__tests__/): rode `npm test`.
+  CP5 cobra, e o tipo de teste que não quebra quando o layout muda. Dez das 16 suítes (§10) são
+  de [`src/domain/__tests__/`](../src/domain/__tests__/): rode `npm test`.
 - **Portáveis** — se um dia o app virar web ou watch, a lógica vem junto sem tocar em nada.
 - **Auditáveis** — dá para conferir a dupla progressão lendo 40 linhas. É o argumento contra usar um
   LLM para gerar treino: um gerador por tabela é auditável, um modelo não é.
@@ -46,13 +46,13 @@ sem navegação. Isso dá três coisas de graça:
 ```
 src/
 ├── app/          rotas (Expo Router). Só composição e navegação
-├── components/   design system: Texto, BotaoPrimario, Nav, Marca…
-├── domain/       as regras CAR-*. ZERO import de react ou react-native
-├── data/         os mocks: catálogo de exercícios, plano A/B/C, histórico de fábrica
-├── estado/       Context API: o histórico persistido e a sessão em andamento
-├── hooks/        cronômetro, guarda da sessão, treino com a troca aplicada
-├── lib/          utilitários (formatação pt-BR, exportar CSV)
-└── theme/        tokens: cor, tipografia, espaço, raio, alvo de toque
+├── components/   design system: Texto, BotaoPrimario, Nav, Heatmap, Surgir…
+├── domain/       as regras CAR-* e RN-*. ZERO import de react ou react-native
+├── data/         o catálogo de exercícios; e a massa de teste do CP5 (plano A/B/C, histórico)
+├── estado/       Context API: conta, perfil e plano, histórico, sessão em andamento
+├── hooks/        cronômetro, guarda da sessão, troca aplicada, tentar de novo ao reconectar
+├── lib/          cliente Supabase, sincronização, formatação pt-BR, exportar CSV
+└── theme/        tokens: cor, tipografia, espaço, raio, alvo de toque, movimento
 ```
 
 ## 4. Tokens em TypeScript, não em CSS-in-JS
@@ -81,6 +81,11 @@ que roda o teste. `62,5 kg`, não `62.5 kg`.
 | Histórico segue o **padrão de movimento** | `Exercicio.padrao` é campo de primeira classe, não etiqueta |
 
 ## 7. Estado: Context API + AsyncStorage, e o que NÃO se guarda (CP5)
+
+> **No CP6** os provedores passaram a ser quatro (conta, perfil e plano, histórico, sessão), as
+> chaves ganharam o id do usuário (`serie:historico:v2:<id>`) e o histórico de fábrica saiu do app:
+> conta nova começa vazia. A sincronização com a nuvem está em §12 e §13. O que esta seção diz
+> sobre **o que não se guarda** continua valendo.
 
 Dois provedores em [`src/estado/`](../src/estado/), sem Redux nem Zustand: o estado do app é
 pequeno e tem dois donos claros.
@@ -136,17 +141,100 @@ campos, ambos só para a `CAR-9.1`: `equipamento` (40 kg na barra não são 40 k
 | [`troca.test.ts`](../src/domain/__tests__/troca.test.ts) | a `CAR-9`: alternativas por padrão + grupo, a estimativa de carga por equipamento |
 | [`progresso.test.ts`](../src/domain/__tests__/progresso.test.ts) | a `CAR-4` na tela de Progresso e o CSV exportado no Perfil |
 
-Testes de tela (React Native Testing Library) ficaram de fora de propósito: as telas só compõem o
-que as funções puras calculam, e o fluxo inteiro foi conferido rodando o app no navegador — é de lá
-que saem os prints de [`evidencias/`](evidencias/).
+**No CP6 vieram mais onze**, e são 248 testes em 16 suítes:
 
-## 11. Em aberto
+| Suíte | O que prova |
+|---|---|
+| [`progressao-carga.test.ts`](../src/domain/__tests__/progressao-carga.test.ts) | a `CAR-1` parte da carga da **última vez**, não da do plano (o bug em que o alvo voltava à carga do plano depois de subir); e a `RN-19` |
+| [`plano.test.ts`](../src/domain/__tests__/plano.test.ts) | a montagem (06–09) e a carga de partida de todo exercício com carga (`RN-18`) |
+| [`edicao.test.ts`](../src/domain/__tests__/edicao.test.ts) | editar o plano (`RN-10` a `RN-19`, `RN-12a`), corrigir o histórico (`RN-40` a `RN-43`), terminar antes (`RN-30`) |
+| [`calendario.test.ts`](../src/domain/__tests__/calendario.test.ts) | o heatmap do Início (`RN-50` a `RN-53`) |
+| [`resumo-detalhe.test.ts`](../src/domain/__tests__/resumo-detalhe.test.ts) | o resumo exercício por exercício e o destaque "você evoluiu em X de Y" (`CAR-7`) |
+| [`sincronizacao.test.ts`](../src/lib/__tests__/sincronizacao.test.ts) | ida e volta entre o aparelho e as tabelas, e a mescla por id (§12) |
+| [`auth.test.ts`](../src/lib/__tests__/auth.test.ts) | as mensagens de erro do Supabase Auth em português e o link de redefinir senha |
+| [`formato-do-historico.test.ts`](../src/components/__tests__/formato-do-historico.test.ts) | as datas do histórico sem `Intl`, a lista por mês, o selo de recorde |
+| [`inicio.test.tsx`](../src/components/__tests__/inicio.test.tsx), [`telas-de-editar-o-plano.test.tsx`](../src/components/__tests__/telas-de-editar-o-plano.test.tsx), [`telas-do-historico.test.tsx`](../src/components/__tests__/telas-do-historico.test.tsx) | as telas mais tocadas, montadas de verdade |
+
+**Testes de tela** ficaram de fora no CP5 de propósito: as telas só compunham o que as funções
+puras calculam. No CP6 as telas passaram a ter decisão própria (qual letra o Início oferece, o que
+o X do treino faz, o que a correção grava), e as mais tocadas ganharam teste montado com
+`react-test-renderer`, com o roteador e os provedores simulados: o Início, as três de editar o
+plano (17–19), o Histórico e o X do Treino ativo. No Jest, o `Surgir` (a entrada
+animada das telas) é trocado por uma `View` em [`jest.setup.ts`](../jest.setup.ts): o timer da
+animação disparava depois que o Jest desmontava o ambiente e derrubava a suíte. O resto do fluxo
+foi conferido rodando o app no navegador.
+
+## 11. CP6: Supabase — conta, banco e segurança
+
+| Peça | Escolha | Por quê |
+|---|---|---|
+| Conta | **Supabase Auth**, e-mail e senha | as telas 02–05 do Figma já eram e-mail e senha; sem rede social, sem SMS |
+| Confirmação de e-mail | **desligada** | o SMTP padrão do Supabase só entrega para o time do projeto e ~2 e-mails por hora: com ela ligada, ninguém de fora conseguiria criar conta na demonstração |
+| Banco | 3 tabelas: `perfis` (respostas da montagem + o plano em `jsonb`), `sessoes` e `series` | o plano é editado **como documento** (montagem, "Montar treino"), então é salvo de uma vez; as séries são **fatos** imutáveis, então são linhas |
+| Esquema | migração SQL versionada em [`supabase/migrations/`](../supabase/migrations/), aplicada com `supabase db push` | o banco nasce de um arquivo revisável, não de cliques no painel |
+| Segurança | **RLS em todas as tabelas** + chave **publicável** no app | a chave vai dentro do APK de qualquer jeito; quem protege é a política `auth.uid() = dono` — testado: anônimo lê lista vazia e não grava |
+| Perfil | criado por **gatilho** junto com a conta (`criar_perfil_da_conta`) | o nome da tela 03 chega no banco sem uma segunda chamada, e não existe conta sem perfil |
+| Configuração do Auth | em [`supabase/config.toml`](../supabase/config.toml), aplicada com `supabase config push` | senha mínima de 8 (a tela 03 diz isso), URLs do link de "esqueci a senha" (`serie://`, Expo Go e navegador) |
+| Tipos | gerados do banco: `supabase gen types` → [`database.types.ts`](../src/lib/database.types.ts) | a coluna errada vira erro de compilação, não bug em produção |
+
+## 12. Sincronização offline-first
+
+O aparelho é a **fonte da verdade**; o Supabase é a cópia. Toda gravação acontece primeiro no
+AsyncStorage (por usuário: `serie:<coisa>:<id do usuário>`) e sobe quando der.
+
+- **Histórico** ([`estado/historico.tsx`](../src/estado/historico.tsx)): o id do treino nasce no
+  aparelho (`sessao-<início em ms>`), então reenviar é idempotente (upsert). Duas filas: treinos a
+  subir (novos ou **corrigidos** — a correção substitui as séries na nuvem) e treinos **apagados**
+  a apagar lá (e que não podem voltar da nuvem enquanto isso). Ao entrar num aparelho novo, o que
+  está na nuvem desce e é **mesclado** por id ([`lib/sincronizacao.ts`](../src/lib/sincronizacao.ts),
+  com testes de ida e volta).
+- **Perfil e plano** ([`estado/perfil.tsx`](../src/estado/perfil.tsx)): um documento; vence o
+  mais recente (`atualizado_em`). O plano que chega do banco é validado (`planoValido`) antes de ser
+  usado.
+- **Quando tenta de novo** ([`hooks/use-ao-reconectar.ts`](../src/hooks/use-ao-reconectar.ts)):
+  depois de cada gravação, quando o app volta para a frente, quando o navegador volta a ter rede, e
+  a cada 30 s enquanto houver pendência. Sem biblioteca de rede: com envio idempotente, tentar de
+  tempos em tempos é tão eficaz quanto escutar a rede, e mais simples.
+- **À vista do usuário:** o Perfil diz "N treinos aguardando conexão" ou "Tudo salvo na nuvem".
+
+## 13. Rotas protegidas e dados por usuário
+
+[`app/_layout.tsx`](../src/app/_layout.tsx) usa o `Stack.Protected` do Expo Router em três áreas:
+deslogado (01–05), logado (06–09, a montagem) e logado **com plano** (o app). Quem não pode estar
+numa tela nem chega a ela; quem entra, sai ou monta o plano é levado sozinho para a primeira tela
+que vale. Os provedores de perfil, histórico e sessão são remontados quando a conta troca (`key`
+pelo id do usuário), então dois logins no mesmo aparelho nunca se misturam.
+
+A versão web passou de `static` para `single` (SPA): com login, o HTML gerado no servidor não tem
+como saber quem está logado, e criaria o cliente de auth sem `window`.
+
+## 14. As regras do app
+
+As regras de **produto** que não são de treino — conta, plano, rodízio, sessão, histórico, Início —
+estão numeradas em [`regras-do-app.md`](regras-do-app.md) (RN-01 a RN-54), ao lado das regras de
+treino (`CAR-*`, [`regras.md`](regras.md)). Cada regra aparece no comentário da função que a cumpre,
+e as que são lógica pura têm teste: editar o plano ([`edicao-plano.ts`](../src/domain/edicao-plano.ts)),
+o calendário do Início ([`calendario.ts`](../src/domain/calendario.ts)), corrigir o histórico e
+terminar o treino antes.
+
+## 15. Em aberto
 
 | # | Questão | Situação |
 |---|---|---|
-| 1 | Supabase ou só local também no CP6? | antes de começar o CP6 |
-| 2 | ~~Onboarding gera o plano ou o usuário monta do zero?~~ | **decidido para o CP5**: o plano A/B/C vem dos mocks; as telas 06–09 (montagem) e 18–19 (montar treino) ficam para o CP6 |
+| 1 | ~~Supabase ou só local também no CP6?~~ | **decidido**: Supabase para conta e cópia na nuvem; o treino segue offline-first (§11, §12) |
+| 2 | ~~Onboarding gera o plano ou o usuário monta do zero?~~ | **os dois**: as três perguntas geram o plano (06–09), e ele é editável (17–19) |
 | 3 | ~~`expo-linear-gradient` ou imagem estática?~~ | **resolvido**: `expo-linear-gradient` no botão primário; o fundo ([`fundo.tsx`](../src/components/fundo.tsx)) são gradientes radiais do `react-native-svg` |
-| 4 | ~~Jest nas funções puras~~ | **resolvido**: `jest-expo`, 113 testes em 5 suítes |
-| 5 | React Native Testing Library para as telas? | **não no CP5** — ver §10 |
-| 6 | A mesa flexora não tem alternativa (é o único isolado de posterior do catálogo) | CP6: entrar com a cadeira flexora no catálogo |
+| 4 | ~~Jest nas funções puras~~ | **resolvido**: `jest-expo`, 248 testes em 16 suítes |
+| 5 | ~~Testes das telas?~~ | **em parte**: as mais tocadas são montadas com `react-test-renderer` (§10); o resto foi conferido no app rodando |
+| 6 | A mesa flexora não tem alternativa (é o único isolado de posterior do catálogo) | entrar com a cadeira flexora no catálogo |
+| 7 | Excluir a conta pelo app | precisa de uma função no servidor (a chave publicável não apaga usuário); hoje é pelo painel do Supabase |
+
+## 16. O APK: EAS Build
+
+| Peça | Escolha | Por quê |
+|---|---|---|
+| Perfil | `preview` no [`eas.json`](../eas.json): `buildType: "apk"`, distribuição interna | o enunciado pede **APK instalável**; o `.aab` do perfil `production` só serve para a Play Store |
+| Assinatura | keystore gerada e guardada pelo EAS | ninguém do grupo guarda arquivo de chave, e a assinatura é sempre a mesma: é ela que deixa o Android aceitar um APK novo como atualização do instalado |
+| Versão | `appVersionSource: "remote"` | o `versionCode` mora no EAS, e o perfil `production` o incrementa sozinho: dois integrantes gerando build não colidem no número |
+| `eas-cli` | pelo `npx`, **fora** das dependências | o EAS instala as dependências com `npm ci` no **npm 10** (Node 22). Com o `eas-cli` nas devDependencies, o lock gerado no npm 11 não servia para o npm 10 (um peer opcional dele pedia o TypeScript 5) e o primeiro build quebrou na instalação. Conferido com o mesmo `npm ci` do npm 10.9.8 antes de mandar de novo. A Expo também recomenda não pôr o CLI no projeto |
+| Variáveis | o `.env` vai junto no build | as duas `EXPO_PUBLIC_*` são públicas por natureza (a URL e a chave publicável); nada secreto entra no APK |

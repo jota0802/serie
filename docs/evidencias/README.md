@@ -63,14 +63,20 @@ O que as passadas mediram, além dos prints:
 - **o app aprende**: depois do resumo, o Hoje propõe o B, e continua no B depois de recarregar;
 - **zero erro no console** do navegador.
 
-## O que fica para o CP6
+## CP6 — o app final no Android
 
-| Falta | Por quê |
+O APK sai do EAS Build e o link para instalar está no README, em
+[Instalar o APK](../../README.md#instalar-o-apk). "APK instalável e funcional" vale **20%** da
+nota do CP6, e quem prova isso é um print num aparelho de verdade:
+
+| Evidência | Como |
 |---|---|
-| vídeo do app final e print do APK instalado num aparelho | "APK instalável e funcional" vale **20%** da nota do CP6 |
-| app rodando no **emulador do Android Studio** | para o CP5 o navegador cumpre o enunciado; no CP6 o APK roda no Android de verdade |
+| **APK instalado num Android** | instale pelo link do README e tire dois prints: a Série. na lista de apps e o app aberto no Início. Guarde aqui como `cp6-apk-instalado.png` e `cp6-inicio-android.png` |
+| **vídeo curto do app final** | roteiro abaixo; guarde como `cp6-video.mp4` se couber nos 100 MB do GitHub, ou suba no Drive e ponha o link no README |
+| **`npm test` verde** | 248 testes em 16 suítes; a saída está no README, em [Ambiente de teste](../../README.md#ambiente-de-teste) |
+| **QR code do APK** | [`apk-qr.png`](apk-qr.png) aponta para o APK da Release v1.0.0: na apresentação, quem tiver Android instala na hora |
 
-## Como reproduzir
+## Como reproduzir no navegador
 
 ```bash
 npm install
@@ -78,26 +84,28 @@ npm run web
 ```
 
 Com o navegador aberto em `localhost:8081`, ative o modo dispositivo (F12 → ícone de celular) e
-escolha um aparelho de 390 × 844. O caminho é: **Montar meu treino → Começar treino → Iniciar série
-→ tocar na tela → Pular descanso**, repetindo até o resumo. No segundo exercício, **Trocar
-exercício** abre a tela 16.
+escolha um aparelho de 390 × 844. Crie uma conta em **Montar meu treino**, responda as três
+perguntas e toque em **Usar este plano**. Depois: **Começar treino → Iniciar série → tocar na tela
+→ Pular descanso**, repetindo até o resumo. No segundo exercício, **Trocar exercício** abre a
+tela 16.
 
-Para apagar o histórico e voltar aos dados de fábrica: **Perfil → Apagar meus dados**.
+Para começar o histórico do zero: **Perfil → Apagar meu histórico**.
 
-Para o emulador do Android Studio: abra um AVD, rode `npm start` e pressione `a`.
+## Roteiro para um vídeo curto (CP6)
 
-## Sugestão de roteiro para um vídeo curto
+O enunciado aceita print **ou** vídeo e não define roteiro. No celular com o APK, em **60 a 90
+segundos**:
 
-O enunciado aceita print **ou** vídeo, e não define roteiro. Se o grupo quiser gravar, em **40 a 60
-segundos** cobre os itens da avaliação (navegação, telas e fluxo; simulação funcionando):
+1. abrir a Série. → **Montar meu treino** → criar a conta (8 s)
+2. as três perguntas → **Seu plano** → **Usar este plano** (12 s)
+3. o **Início**: a letra do dia, o que mudou desde a última vez e o heatmap (6 s)
+4. **Começar treino** → **Iniciar série** → tocar para encerrar → o descanso com os campos já
+   preenchidos; corrigir um número (15 s)
+5. **Trocar exercício** → escolher a variação → a carga estimada (8 s)
+6. **X → Terminar e salvar** → o **Resumo**: o que evoluiu e o alvo da próxima vez (8 s)
+7. de volta ao Início, o dia de hoje aceso no heatmap; aba **Treinos** → uma letra → **Trocar**
+   um exercício (12 s)
+8. **Progresso → Histórico de treinos** → abrir o treino → corrigir uma série (8 s)
+9. **Perfil**: "Tudo salvo na nuvem" (4 s)
 
-1. a Abertura → **Montar meu treino** → o **Hoje**: o alvo veio da regra, não de um valor fixo (6 s)
-2. **Começar treino** → a carga que subiu (5 s)
-3. **Iniciar série** → o cronômetro → tocar para encerrar (8 s)
-4. o descanso com os campos **já preenchidos**; corrigir um número (8 s)
-5. no 2º exercício, **Trocar exercício** → escolher a variação → a carga estimada (10 s)
-6. pular para o fim (ou mostrar o resumo já pronto) → o **Resumo** (6 s)
-7. **Fechar** → o Hoje já no **B**; passar pelas abas Progresso, Treinos e Perfil (10 s)
-
-Sem áudio e sem edição resolve. Guarde aqui como `cp5-video.mp4` se couber no limite de 100 MB do
-GitHub; se não couber, suba no Drive e ponha o link no README.
+Sem áudio e sem edição resolve.
