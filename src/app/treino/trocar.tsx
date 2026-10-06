@@ -10,6 +10,7 @@ import type { Exercicio, SerieRegistrada } from '@/domain';
 import { ultimasSeriesDe } from '@/domain/historico';
 import { alternativasNaSessao, type AlvosDaTroca } from '@/domain/troca';
 import { useHistorico } from '@/estado/historico';
+import { usePlano } from '@/estado/perfil';
 import { useSessao, useTreinoEmAndamento } from '@/estado/sessao';
 import { alvosSeTrocar, anterioresA, ocupadosNaSessao } from '@/hooks/use-treino-com-troca';
 import { formatarKg } from '@/lib/formato';
@@ -29,6 +30,7 @@ const MOTIVOS: { chave: Motivo; rotulo: string }[] = [
  * foi trocado. Tocar numa troca o exercício SÓ nesta sessão e volta para a 11.
  */
 export default function TrocarExercicio() {
+  const { treinos } = usePlano();
   const { sessao, trocarExercicio } = useSessao();
   const treino = useTreinoEmAndamento();
   const { sessoes } = useHistorico();
@@ -60,10 +62,10 @@ export default function TrocarExercicio() {
         alt,
         alt.id === exOriginal.id,
         ultimasSeriesDe(anteriores, alt.id),
-        alvosSeTrocar(original, alt.id, anteriores, sessao.registradas),
+        alvosSeTrocar(original, alt.id, anteriores, sessao.registradas, treinos),
       ),
     }));
-  }, [sessao, treino, sessoes]);
+  }, [sessao, treino, sessoes, treinos]);
 
   if (semSessao || !treino.item) return null;
   const { exercicio, feitasDoExercicio, item } = treino;

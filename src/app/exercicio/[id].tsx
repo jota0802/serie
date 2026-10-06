@@ -9,10 +9,10 @@ import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { Voltar } from '@/components/voltar';
 import { EXERCICIOS_POR_ID, NOME_DO_GRUPO, NOME_DO_PADRAO, nomeCurtoDe } from '@/data/exercicios';
-import { TREINOS } from '@/data/treinos';
-import { melhor1RM, type Alvo, type ItemDeTreino, type SerieRegistrada } from '@/domain';
+import { melhor1RM, type Alvo, type ItemDeTreino, type SerieRegistrada, type Treino } from '@/domain';
 import { ordenarPorFim, recordeDe, type SessaoFechada } from '@/domain/historico';
 import { useHistorico } from '@/estado/historico';
+import { usePlano } from '@/estado/perfil';
 import { useSessao } from '@/estado/sessao';
 import { alvosSeTrocar, useTreinoComTroca } from '@/hooks/use-treino-com-troca';
 import { formatarKg } from '@/lib/formato';
@@ -51,6 +51,7 @@ function prescricaoDe(
   id: string | undefined,
   emAndamento: ReturnType<typeof useTreinoComTroca>,
   sessoes: readonly SessaoFechada[],
+  treinos: readonly Treino[],
 ): Prescricao | null {
   if (!id) return null;
   if (emAndamento?.item?.exercicioId === id && emAndamento.alvo) {
@@ -59,9 +60,9 @@ function prescricaoDe(
       semReferencia: emAndamento.semReferencia,
     };
   }
-  for (const t of TREINOS) {
+  for (const t of treinos) {
     const item = t.itens.find((i) => i.exercicioId === id);
-    const alvo = item && alvosSeTrocar(item, id, sessoes)?.alvos[0];
+    const alvo = item && alvosSeTrocar(item, id, sessoes, [], treinos)?.alvos[0];
     if (item && alvo) return { item, alvo, treinoId: t.id, semReferencia: false };
   }
   return null;
@@ -78,6 +79,7 @@ export default function TelaExercicio() {
   const { sessoes } = useHistorico();
   const { sessao } = useSessao();
   const emAndamento = useTreinoComTroca();
+  const plano = usePlano();
 
   const voltar = () => (router.canGoBack() ? router.back() : router.replace('/hoje'));
 
@@ -91,7 +93,7 @@ export default function TelaExercicio() {
   );
 
   // A prescrição: se é o exercício na mão agora, o alvo da sessão (com troca); senão, o do plano.
-  const prescricao = prescricaoDe(id, emAndamento, sessoes);
+  const prescricao = prescricaoDe(id, emAndamento, sessoes, plano.treinos);
 
   if (!exercicio) {
     return (

@@ -1,10 +1,13 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { BotaoPrimario } from '@/components/botao-primario';
 import { Fundo } from '@/components/fundo';
 import { Chevron, Fechar, SetaCima, Troca } from '@/components/icones';
 import { LinhaDeSerie } from '@/components/linha-de-serie';
+import { PainelDeEncerrar } from '@/components/painel-de-encerrar';
+import { Surgir } from '@/components/surgir';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { nomeCurtoDe } from '@/data/exercicios';
@@ -20,7 +23,7 @@ import { accent, hit, neutral, radius, space, surface } from '@/theme/tokens';
  * Número dominante: A CARGA ALVO.
  */
 export default function TreinoAtivo() {
-  const { sessao, iniciarSerie, abandonar } = useSessao();
+  const { sessao, iniciarSerie, terminarAgora, abandonar } = useSessao();
   // Com a CAR-9.1: depois de trocar, o alvo é estimado, não herdado do outro aparelho.
   const treino = useTreinoComTroca();
   const decorridos = useCronometro(sessao?.inicioMs ?? null);
@@ -29,6 +32,8 @@ export default function TreinoAtivo() {
   // (recarregou a aba, CAR-8) volta para o Hoje. A guarda faz os dois num efeito —
   // ☠️ `router.replace` durante o render dispara "Cannot update a component while rendering".
   const pode = useGuardaDaSessao();
+  // O X abre o painel de encerrar (RN-30 e RN-32); antes ele descartava o treino direto.
+  const [encerrando, setEncerrando] = useState(false);
 
   if (!pode || !sessao || !treino?.item || !treino.alvo) return <Fundo />;
 
@@ -53,9 +58,15 @@ export default function TreinoAtivo() {
   };
 
   // `dismissTo` volta ao Hoje que já está embaixo na pilha; `replace` empilhava um segundo Hoje.
+  // Navega ANTES de zerar a sessão: a guarda desta tela não pode reagir ao `null`.
   const sair = () => { router.dismissTo('/hoje'); abandonar(); };
+  // RN-30: salva como está. Quem navega é a guarda — viu o fim, leva ao resumo (como na última série).
+  const terminarESalvar = () => { setEncerrando(false); terminarAgora(); };
+  const seriesPrevistas = treino.treino.itens.reduce((total, i) => total + i.series, 0);
 
-  return (
+  const extra = corporal && alvo.cargaKg > 0;
+
+  const tela = (
     <Tela>
       <View style={estilos.topo}>
         <View style={estilos.topoTexto}>
@@ -65,7 +76,7 @@ export default function TreinoAtivo() {
         </View>
         <View style={estilos.topoDireita}>
           <Texto papel="desc" cor={neutral.n300}>{formatarTempo(decorridos)}</Texto>
-          <Pressable onPress={sair} accessibilityRole="button" accessibilityLabel="Encerrar treino" style={estilos.alvoIcone}>
+          <Pressable onPress={() => setEncerrando(true)} accessibilityRole="button" accessibilityLabel="Encerrar treino" style={estilos.alvoIcone}>
             <Fechar />
           </Pressable>
         </View>
@@ -76,7 +87,7 @@ export default function TreinoAtivo() {
       </View>
 
       <ScrollView contentContainerStyle={estilos.conteudo} showsVerticalScrollIndicator={false}>
-        <View style={estilos.nome}>
+        <Surgir ordem={0} style={estilos.nome}>
           <Texto papel="h1" numberOfLines={1} style={estilos.nomeTexto}>
             {nomeCurtoDe(exercicio, item.exercicioId)}
           </Texto>
@@ -90,16 +101,21 @@ export default function TreinoAtivo() {
             <Texto papel="desc" cor={neutral.n300}>Histórico</Texto>
             <Chevron tamanho={16} />
           </Pressable>
-        </View>
+        </Surgir>
 
-        <View style={estilos.carga}>
+        <Surgir ordem={1} style={estilos.carga}>
           {/* Sem base para estimar, um traço: "0 kg" no número dominante pareceria sugestão. */}
           <Texto papel="hero">
-            {corporal ? 'peso do corpo' : treino.semReferencia ? '—' : formatarKg(alvo.cargaKg)}
+            {/* Peso do corpo COM carga extra (cinto, colete): o número é a extra, senão o topo
+                dizia "peso do corpo" e as séries embaixo, "7,5 kg". */}
+            {corporal
+              ? (extra ? `+${formatarKg(alvo.cargaKg)}` : 'peso do corpo')
+              : treino.semReferencia ? '—' : formatarKg(alvo.cargaKg)}
           </Texto>
-          {!corporal && <Texto papel="h2" cor={neutral.n200}> kg</Texto>}
+          {(!corporal || extra) && <Texto papel="h2" cor={neutral.n200}> kg</Texto>}
           <Texto papel="desc" cor={neutral.n150}>  {item.faixa.min}–{item.faixa.max} reps</Texto>
-        </View>
+        </Surgir>
+        {extra && <Texto papel="desc" cor={neutral.n300}>Peso do corpo + carga extra</Texto>}
 
         {/* Peso do corpo não tem carga para estimar: a nota seria ruído. */}
         {alvo.origem === 'estimado' && !corporal && (
@@ -117,7 +133,7 @@ export default function TreinoAtivo() {
 
         <View style={estilos.divisor} />
 
-        <View style={estilos.series}>
+        <Surgir ordem={2} style={estilos.series}>
           {alvos.map((a, i) => {
             const feita = feitasDoExercicio[i];
             return (
@@ -131,7 +147,7 @@ export default function TreinoAtivo() {
               />
             );
           })}
-        </View>
+        </Surgir>
       </ScrollView>
 
       <View style={estilos.rodape}>
@@ -154,9 +170,26 @@ export default function TreinoAtivo() {
       <BotaoPrimario onPress={comecarSerie} style={estilos.cta}>Iniciar série</BotaoPrimario>
     </Tela>
   );
+
+  return (
+    <View style={estilos.raiz}>
+      {/* Com o painel aberto, a tela embaixo sai da árvore do leitor de tela (o painel é modal). */}
+      <View style={estilos.raiz} aria-hidden={encerrando}>{tela}</View>
+      {encerrando && (
+        <PainelDeEncerrar
+          feitas={sessao.registradas.length}
+          previstas={seriesPrevistas}
+          aoTerminar={terminarESalvar}
+          aoDescartar={sair}
+          aoContinuar={() => setEncerrando(false)}
+        />
+      )}
+    </View>
+  );
 }
 
 const estilos = StyleSheet.create({
+  raiz: { flex: 1 },
   topo: { height: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   topoTexto: { flexDirection: 'row', alignItems: 'center', gap: space.s2, flex: 1 },
   topoDireita: { flexDirection: 'row', alignItems: 'center', gap: space.s2 },

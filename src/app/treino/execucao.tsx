@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Fundo } from '@/components/fundo';
+import { Surgir } from '@/components/surgir';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
 import { nomeCurtoDe } from '@/data/exercicios';
@@ -58,31 +59,33 @@ export default function Execucao() {
       style={estilos.toque}
     >
       <Tela aquecido>
-        <View style={estilos.topo}>
+        <Surgir ordem={0} style={estilos.topo}>
           <Texto papel="eyebrow">
             Série {sessao.indiceSerie + 1} de {item.series}
           </Texto>
           <Texto papel="h1" numberOfLines={1}>{nomeCurtoDe(exercicio, item.exercicioId)}</Texto>
           <View style={estilos.alvo}>
             <Texto papel="h2">
-              {exercicio?.unidade === 'corporal' ? 'peso do corpo' : `${formatarKg(alvo.cargaKg)} kg`}
+              {exercicio?.unidade === 'corporal'
+                ? alvo.cargaKg > 0 ? `peso do corpo + ${formatarKg(alvo.cargaKg)} kg` : 'peso do corpo'
+                : `${formatarKg(alvo.cargaKg)} kg`}
             </Texto>
             <Texto papel="desc" cor={neutral.n400}> · {item.faixa.min}–{item.faixa.max} reps</Texto>
           </View>
           {anterior != null && (
             <Texto papel="desc" cor={neutral.n400}>Série anterior: {anterior} s</Texto>
           )}
-        </View>
+        </Surgir>
 
         <View style={estilos.meio} />
 
-        <View style={estilos.rodape}>
+        <Surgir ordem={1} style={estilos.rodape}>
           <View style={estilos.contagem}>
             <Texto papel="colossal">{segundos}</Texto>
             <Texto papel="hero" cor={neutral.n400}> s</Texto>
           </View>
           <Texto papel="desc" cor={neutral.n400}>Toque em qualquer lugar para encerrar</Texto>
-        </View>
+        </Surgir>
       </Tela>
     </Pressable>
   );

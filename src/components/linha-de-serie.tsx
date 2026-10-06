@@ -9,9 +9,10 @@ import { hit, neutral, radius, role, space, surface } from '@/theme/tokens';
  * Não confundir com `Linha de exercício`, que é a PRESCRIÇÃO: o que o treino manda.
  * A distinção evita sopa, e é a mesma do arquivo do Figma.
  *
- * Três estados, e a cor deles é toda neutra:
- *   feita     tinta cheia
- *   ativa     tinta cheia + tinte de fundo + borda
+ * Três estados, e a cor deles é toda neutra — numa linha ABERTA, com divisória fina (o padrão das
+ * listas do app; sem cartão):
+ *   feita     número em tinta cheia (✓)
+ *   ativa     anel branco no número e o texto aceso
  *   pendente  cinza, porque ainda não aconteceu
  *
  * ⚠️ Série falhada NÃO é vermelha (`CAR-3.1`). Vermelho é só para ação destrutiva.
@@ -61,13 +62,11 @@ const estilos = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: space.s3,
-    paddingHorizontal: space.s3,
     paddingVertical: space.s2,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: 'transparent',
+    borderBottomWidth: 1,
+    borderBottomColor: surface.line,
   },
-  ativa: { backgroundColor: surface.rowActive, borderColor: surface.line2 },
+  ativa: {},
   numero: {
     width: 28, height: 28, borderRadius: radius.full,
     alignItems: 'center', justifyContent: 'center',

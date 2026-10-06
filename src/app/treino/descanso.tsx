@@ -3,6 +3,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { BackHandler, Pressable, StyleSheet, TextInput, View } from 'react-native';
 
 import { Anel } from '@/components/anel';
+import { BotaoPrimario } from '@/components/botao-primario';
+import { Mais, Menos } from '@/components/icones-de-edicao';
+import { Surgir } from '@/components/surgir';
 import { Fundo } from '@/components/fundo';
 import { Tela } from '@/components/tela';
 import { Texto } from '@/components/texto';
@@ -11,7 +14,7 @@ import { useContagemRegressiva } from '@/hooks/use-cronometro';
 import { useGuardaDaSessao } from '@/hooks/use-guarda-da-sessao';
 import { useTreinoComTroca } from '@/hooks/use-treino-com-troca';
 import { formatarKg, formatarTempo } from '@/lib/formato';
-import { hit, neutral, radius, role, space, surface } from '@/theme/tokens';
+import { font, hit, neutral, radius, size, space, surface } from '@/theme/tokens';
 
 /**
  * Tela 13 · Descanso — `CAR-6` e `CAR-11`.
@@ -36,7 +39,8 @@ function ConteudoDoDescanso() {
 
   const item = treino?.item;
   const alvo = treino?.alvo;
-  const total = treino?.exercicio?.descansoSegundos ?? 90;
+  // RN-15: o descanso do exercício NO PLANO, quando a pessoa ajustou; senão o padrão da CAR-6.
+  const total = treino?.item?.descansoSegundos ?? treino?.exercicio?.descansoSegundos ?? 90;
 
   const [reps, setReps] = useState(() => String(alvo?.reps ?? ''));
   const [carga, setCarga] = useState(() => (alvo ? formatarKg(alvo.cargaKg) : ''));
@@ -76,89 +80,177 @@ function ConteudoDoDescanso() {
   if (!sessao || !treino || !item || !alvo) return <Fundo />;
 
   const ultimaDoExercicio = sessao.indiceSerie + 1 >= item.series;
+  // A carga anda no passo do exercício: 2,5 superior · 5 inferior · 2 halter (peso do corpo: 2,5).
+  const incremento = treino.exercicio?.incrementoKg ?? 0;
+  const passoDaCarga = incremento > 0 ? incremento : 2.5;
 
   return (
     <Tela>
       <View style={estilos.centro}>
-        <Texto papel="eyebrow">Descanso</Texto>
+        <Surgir ordem={0} style={estilos.relogio}>
+          <Texto papel="eyebrow">Descanso</Texto>
+          <Anel progresso={restante / total}>
+            <Texto papel="mega">{formatarTempo(restante)}</Texto>
+            <Texto papel="desc" cor={neutral.n400}>de {formatarTempo(total)}</Texto>
+          </Anel>
+        </Surgir>
 
-        <Anel progresso={restante / total}>
-          <Texto papel="mega">{formatarTempo(restante)}</Texto>
-          <Texto papel="desc" cor={neutral.n400}>de {formatarTempo(total)}</Texto>
-        </Anel>
-
-        <View style={estilos.registro}>
-          <Texto papel="eyebrow">O que você fez</Texto>
+        <Surgir ordem={1} style={estilos.registro}>
+          <Texto papel="eyebrow">O que você fez · {sessao.indiceSerie + 1}ª série</Texto>
+          {/* CAR-2: já vem com o alvo — confirmar é não mexer. Corrigir é um toque no − ou no +
+              (mão suada não digita), ou tocar no número para digitar. */}
           <View style={estilos.campos}>
-            <View style={estilos.numeroDaSerie}>
-              <Texto papel="desc" cor={role.done}>{sessao.indiceSerie + 1}</Texto>
-            </View>
-            <Campo valor={reps} aoMudar={setReps} unidade="reps" />
-            <Campo valor={carga} aoMudar={setCarga} unidade="kg" />
+            <Ajuste rotulo="Reps" valor={reps} aoMudar={setReps} passo={1} />
+            <Ajuste
+              rotulo="Carga · kg"
+              valor={carga}
+              aoMudar={setCarga}
+              passo={passoDaCarga}
+              decimal
+            />
           </View>
           <Texto papel="desc" cor={neutral.n400}>
             {ultimaDoExercicio
               ? `A seguir · ${treino.proximoExercicio ? treino.proximoExercicio.nomeCurto ?? treino.proximoExercicio.nome : 'resumo do treino'}`
               : `A seguir · ${sessao.indiceSerie + 2}ª série · ${item.faixa.min}–${item.faixa.max} × ${formatarKg(alvo.cargaKg)} kg`}
           </Texto>
-        </View>
+        </Surgir>
       </View>
 
-      <View style={estilos.botoes}>
-        <Pressable onPress={() => adicionar(30)} accessibilityRole="button" style={estilos.ghost}>
-          <Texto papel="h2" cor={neutral.n300}>+ 30 s</Texto>
+      {/* A ação primária do descanso é seguir para a próxima série (relevo: um por tela). */}
+      <Surgir ordem={2} style={estilos.botoes}>
+        <Pressable
+          onPress={() => adicionar(30)}
+          accessibilityRole="button"
+          accessibilityLabel="Mais 30 segundos de descanso"
+          style={({ pressed }) => [estilos.secundario, pressed && estilos.pressionado]}
+        >
+          <Texto papel="corpo" cor={neutral.n200}>+30 s</Texto>
         </Pressable>
-        <Pressable onPress={concluir} accessibilityRole="button" style={estilos.ghost}>
-          <Texto papel="h2" cor={neutral.n150}>Pular descanso</Texto>
-        </Pressable>
-      </View>
+        <BotaoPrimario onPress={concluir} style={estilos.flex}>Pular descanso</BotaoPrimario>
+      </Surgir>
     </Tela>
   );
 }
 
-/** O campo que já vem preenchido. `CAR-2`: confirmar é um toque, corrigir é opcional. */
-function Campo({ valor, aoMudar, unidade }: { valor: string; aoMudar: (v: string) => void; unidade: string }) {
+/** Lê "42,5" ou "42.5"; vazio ou inválido vira nulo. */
+function paraNumero(texto: string): number | null {
+  const n = Number.parseFloat(texto.replace(',', '.'));
+  return Number.isFinite(n) ? n : null;
+}
+
+/**
+ * Um número do registro: rótulo em cima, − e + dos lados, o número no meio (tocável para digitar).
+ * Nunca desce de zero; a carga sai com vírgula (`formatarKg`), as reps inteiras.
+ */
+function Ajuste({
+  rotulo, valor, aoMudar, passo, decimal = false,
+}: {
+  rotulo: string;
+  valor: string;
+  aoMudar: (v: string) => void;
+  passo: number;
+  decimal?: boolean;
+}) {
+  const numero = paraNumero(valor) ?? 0;
+  const mudar = (delta: number) => {
+    const novo = Math.max(0, Math.round((numero + delta) * 100) / 100);
+    aoMudar(decimal ? formatarKg(novo) : String(Math.round(novo)));
+  };
   return (
-    <View style={estilos.campo}>
-      <TextInput
-        value={valor}
-        onChangeText={aoMudar}
-        keyboardType="decimal-pad"
-        selectTextOnFocus
-        style={estilos.entrada}
-        accessibilityLabel={unidade}
-      />
-      <Texto papel="desc" cor={neutral.n400}>{unidade}</Texto>
+    <View style={estilos.ajuste}>
+      <Texto papel="eyebrow" cor={neutral.n300}>{rotulo}</Texto>
+      <View style={estilos.ajusteLinha}>
+        <BotaoRedondo rotulo={`Menos ${rotulo.toLowerCase()}`} desabilitado={numero <= 0} onPress={() => mudar(-passo)}>
+          <Menos tamanho={18} cor={numero <= 0 ? neutral.n500 : neutral.n100} />
+        </BotaoRedondo>
+        <TextInput
+          value={valor}
+          onChangeText={aoMudar}
+          keyboardType={decimal ? 'decimal-pad' : 'number-pad'}
+          selectTextOnFocus
+          style={estilos.numero}
+          accessibilityLabel={rotulo}
+        />
+        <BotaoRedondo rotulo={`Mais ${rotulo.toLowerCase()}`} onPress={() => mudar(passo)}>
+          <Mais tamanho={18} cor={neutral.n100} />
+        </BotaoRedondo>
+      </View>
     </View>
+  );
+}
+
+function BotaoRedondo({
+  rotulo, desabilitado = false, onPress, children,
+}: {
+  rotulo: string;
+  desabilitado?: boolean;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={desabilitado}
+      accessibilityRole="button"
+      accessibilityLabel={rotulo}
+      accessibilityState={{ disabled: desabilitado }}
+      style={({ pressed }) => [estilos.redondo, pressed && !desabilitado && estilos.pressionado]}
+    >
+      {children}
+    </Pressable>
   );
 }
 
 const estilos = StyleSheet.create({
   centro: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space.s5 },
+  relogio: { alignItems: 'center', gap: space.s5 },
   registro: { alignItems: 'center', gap: space.s3, alignSelf: 'stretch' },
-  campos: {
-    flexDirection: 'row', alignItems: 'center', gap: space.s2,
-    alignSelf: 'stretch', padding: space.s2,
-    borderRadius: radius.lg, borderWidth: 1, borderColor: surface.line,
-    // Sem isto o poço tem a mesma cor do canvas e os dois campos desaparecem.
-    backgroundColor: surface.raised,
+  // Os dois ajustes UM ABAIXO DO OUTRO, em linhas abertas com divisória (o padrão das listas):
+  // o rótulo à esquerda, o − número + à direita.
+  campos: { alignSelf: 'stretch', borderTopWidth: 1, borderTopColor: surface.line },
+  ajuste: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: space.s3,
+    paddingVertical: space.s2,
+    borderBottomWidth: 1,
+    borderBottomColor: surface.line,
   },
-  numeroDaSerie: {
-    width: 28, height: 28, borderRadius: radius.full,
-    alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1.5, borderColor: neutral.n600,
+  ajusteLinha: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.s2 },
+  // O número: display, grande, centrado — e digitável com um toque.
+  // Largura FIXA: no navegador o campo de texto nasce com ~20 caracteres de largura e empurra o
+  // − e o + para cima do número.
+  numero: {
+    width: 72,
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+    textAlign: 'center',
+    fontFamily: font.display,
+    fontSize: size.h1,
+    color: neutral.n100,
   },
-  campo: {
-    flex: 1, minHeight: hit.row, borderRadius: radius.md, backgroundColor: neutral.n1000,
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 4,
+  redondo: {
+    width: hit.min,
+    height: hit.min,
+    flexShrink: 0,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    borderColor: surface.line2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  entrada: {
-    color: neutral.n100, fontFamily: 'SpaceGrotesk_700Bold', fontSize: 24,
-    padding: 0, minWidth: 44, textAlign: 'right',
-  },
+  pressionado: { backgroundColor: surface.rowActive },
   botoes: { flexDirection: 'row', gap: space.s3, paddingBottom: space.s5 },
-  ghost: {
-    flex: 1, minHeight: hit.cta, borderRadius: radius.md,
-    alignItems: 'center', justifyContent: 'center', backgroundColor: neutral.n850,
+  flex: { flex: 1 },
+  secundario: {
+    minHeight: hit.cta,
+    paddingHorizontal: space.s5,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: surface.line2,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
